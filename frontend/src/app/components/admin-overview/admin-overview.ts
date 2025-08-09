@@ -13,7 +13,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatSelectModule } from '@angular/material/select';
-import { RouterModule } from '@angular/router';
+import { Router, RouterModule } from '@angular/router';
 import { Admin } from '../../services/admin';
 import { MatIconModule } from '@angular/material/icon';
 
@@ -39,7 +39,7 @@ type FiltersForm = {
   styleUrl: './admin-overview.scss'
 })
 export class AdminOverview implements OnInit {
-  constructor(private fb: FormBuilder, private api: Admin) {}
+  constructor(private fb: FormBuilder, private api: Admin, private router: Router) {}
 
   form!: FormGroup;           
   activeTab = 0;
@@ -140,5 +140,13 @@ export class AdminOverview implements OnInit {
         error: (e) => { this.completed.error = e?.error?.message || 'Failed to load completed.'; this.completed.loading = false; }
       });
     }
+  }
+
+  environment(){
+    this.router.navigate(['/admin']);
+  }
+
+  logout(){
+    
   }
 }
