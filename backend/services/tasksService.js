@@ -87,7 +87,51 @@ async function fetchComments({ from, to, beekeeperId, taskId, page, pageSize }) 
   return { total, items: dataRes.recordset };
 }
 
+async function fetchCompleted({ from, to, beekeeperId, taskId, page, pageSize }) {
+  await poolConnect;
+  const req = (await poolConnect).request();
+  const { offset, pageSize: ps, orderBy } = pagingClause(page, pageSize, 'a.done_at DESC, a.id DESC');
+
+  let where = "a.status='DONE'";
+  if (from) { req.input('from', sql.DateTime2, new Date(from)); where += ' AND a.done_at >= @from'; }
+  if (to)   { req.input('to',   sql.DateTime2, new Date(to));   where += ' AND a.done_at <= @to'; }
+  if (beekeeperId) { req.input('bk', sql.Int, beekeeperId); where += ' AND a.beekeeper_id = @bk'; }
+  if (taskId)      { req.input('tid', sql.Int, taskId);     where += ' AND a.task_id = @tid'; }
+
+  const countQ = `
+    SELECT COUNT(*) AS total
+    FROM TaskAssignments a
+    WHERE ${where};
+  `;
+  const dataQ = `
+    SELECT
+      a.id AS assignment_id,
+      a.task_id,
+      a.beekeeper_id,
+      a.done_at,
+      a.result_note,
+      t.title AS task_title,
+      t.start_at, t.end_at,
+      u.name, u.surname
+    FROM TaskAssignments a
+    LEFT JOIN Tasks t ON t.id = a.task_id
+    LEFT JOIN Users u ON u.id = a.beekeeper_id
+    WHERE ${where}
+    ORDER BY ${orderBy}
+    OFFSET ${offset} ROWS FETCH NEXT ${ps} ROWS ONLY;
+  `;
+
+  const [countRes, dataRes] = await Promise.all([
+    req.query(countQ),
+    req.query(dataQ)
+  ]);
+
+  const total = countRes.recordset[0]?.total || 0;
+  return { total, items: dataRes.recordset };
+}
+
 module.exports = {
   fetchTasks,
-  fetchComments
+  fetchComments,
+  fetchCompleted
 };
