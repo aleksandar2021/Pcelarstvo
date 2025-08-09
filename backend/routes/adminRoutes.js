@@ -6,5 +6,6 @@ const ctrl = require('../controllers/tasksController');
 router.use(requireAuth, requireRole('administrator'));
 
 router.get('/tasks', ctrl.getTasks);
+router.get('/comments', ctrl.getComments);
 
 module.exports = router;

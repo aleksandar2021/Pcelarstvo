@@ -48,6 +48,46 @@ async function fetchTasks({ from, to, status, page, pageSize }) {
   return { total, items: dataRes.recordset };
 }
 
+async function fetchComments({ from, to, beekeeperId, taskId, page, pageSize }) {
+  await poolConnect;
+  const req = (await poolConnect).request();
+  const { offset, pageSize: ps, orderBy } = pagingClause(page, pageSize, 'c.created_at DESC, c.id DESC');
+
+  let where = '1=1';
+  if (from) { req.input('from', sql.DateTime2, new Date(from)); where += ' AND c.created_at >= @from'; }
+  if (to)   { req.input('to',   sql.DateTime2, new Date(to));   where += ' AND c.created_at <= @to'; }
+  if (beekeeperId) { req.input('bk', sql.Int, beekeeperId); where += ' AND c.author_id = @bk'; }
+  if (taskId)      { req.input('tid', sql.Int, taskId);     where += ' AND c.task_id = @tid'; }
+
+  const countQ = `
+    SELECT COUNT(*) AS total
+    FROM TaskComments c
+    WHERE ${where};
+  `;
+  const dataQ = `
+    SELECT
+      c.id, c.task_id, c.assignment_id, c.author_id,
+      c.content, c.created_at,
+      t.title AS task_title,
+      u.name, u.surname
+    FROM TaskComments c
+    LEFT JOIN Tasks t ON t.id = c.task_id
+    LEFT JOIN Users u ON u.id = c.author_id
+    WHERE ${where}
+    ORDER BY ${orderBy}
+    OFFSET ${offset} ROWS FETCH NEXT ${ps} ROWS ONLY;
+  `;
+
+  const [countRes, dataRes] = await Promise.all([
+    req.query(countQ),
+    req.query(dataQ)
+  ]);
+
+  const total = countRes.recordset[0]?.total || 0;
+  return { total, items: dataRes.recordset };
+}
+
 module.exports = {
-  fetchTasks
+  fetchTasks,
+  fetchComments
 };
