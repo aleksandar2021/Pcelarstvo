@@ -1,1 +1,57 @@
-<p>admin works!</p>
+<mat-toolbar class="topbar">
+  <span class="brand">Beekeeping</span>
+  <span class="spacer"></span>
+  <a mat-button routerLink="/logout">Logout</a>
+</mat-toolbar>
+
+<div class="page">
+  <div class="layout">
+    <div class="left">
+      <mat-card class="card">
+        <mat-card-header>
+          <mat-card-title>Weather forecast ({{ daysWeather }} days)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="loadingWeather" class="loading">Loading weather…</div>
+          <div *ngIf="weatherError" class="error">{{ weatherError }}</div>
+          <google-chart
+            *ngIf="!loadingWeather && !weatherError"
+            [type]="weatherChart.chartType"
+            [columns]="weatherChart.columns"
+            [data]="weatherChart.data"
+            [options]="weatherChart.options">
+          </google-chart>
+        </mat-card-content>
+      </mat-card>
+
+      <mat-card class="card">
+        <mat-card-header>
+          <mat-card-title>Air quality (O₃, NO₂, SO₂, CO, PM2.5)</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div *ngIf="loadingAQ" class="loading">Loading air quality…</div>
+          <div *ngIf="aqError" class="error">{{ aqError }}</div>
+          <google-chart
+            *ngIf="!loadingAQ && !aqError"
+            [type]="airChart.chartType"
+            [columns]="airChart.columns"
+            [data]="airChart.data"
+            [options]="airChart.options">
+          </google-chart>
+        </mat-card-content>
+      </mat-card>
+    </div>
+
+    
+    <div class="right">
+      <mat-card class="card right-box">
+        <mat-card-header>
+          <mat-card-title>Admin tools</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <p class="muted">TO BE IMPLEMENTED</p>
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </div>
+</div>
