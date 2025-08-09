@@ -52,7 +52,11 @@ async function login(req, res) {
       { expiresIn: '2h' }
     );
 
-    return res.status(200).json({ token });
+    return res.status(200).json({ 
+      token,
+      username: user.username,
+      role: user.role 
+    });
   } catch (err) {
     console.error('Login error:', err);
     return res.status(500).json({ message: 'Server error.' });

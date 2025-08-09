@@ -5,7 +5,7 @@ async function registerUser(user) {
     // wait for connection to DB
     await poolConnect;
     const { username, password, name, surname } = user;
-    // this is always user, since admin role is injected directly into DB
+    // this is always user, since admin role is injected directly into DB while seeding
     const role = 'user';
     // encrypt the password
     const hashedPassword = await bcrypt.hash(password, 10);

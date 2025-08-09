@@ -5,6 +5,9 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
 import { UserService } from '../../services/user-service';
+import { MatCardModule } from '@angular/material/card';
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { Router } from '@angular/router';
 
 @Component({
   selector: 'app-register',
@@ -13,7 +16,9 @@ import { UserService } from '../../services/user-service';
     FormsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatCardModule,
+    MatToolbarModule
   ],
   templateUrl: './register.html',
   styleUrl: './register.scss'
@@ -26,7 +31,7 @@ export class Register {
   message = '';
   errorMessage = '';
 
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService, private router: Router) {}
 
   register() {
     this.userService.register({
@@ -44,5 +49,9 @@ export class Register {
         this.message = '';
       }
     });
+  }
+
+  login() {
+    this.router.navigate(['/login']);
   }
 }
