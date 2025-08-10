@@ -346,6 +346,66 @@ async function createAndAssignTask({ beekeeperId, title, description, start_at, 
   return { ok: true, taskId: newTaskId };
 }
 
+async function updateTask({ taskId, title, description, start_at, end_at }) {
+  await poolConnect;
+  const req = (await poolConnect).request();
+
+  req.input('id', sql.Int, taskId);
+  req.input('title', sql.NVarChar(255), title);
+  req.input('desc', sql.NVarChar(sql.MAX), description);
+  req.input('start', sql.DateTime2, new Date(start_at));
+  req.input('end', sql.DateTime2, new Date(end_at));
+
+  const checkQ = `
+    SELECT COUNT(*) AS cnt
+    FROM Tasks
+    WHERE id = @id AND start_at > GETDATE();
+  `;
+  const checkRes = await req.query(checkQ);
+  if (!checkRes.recordset[0].cnt) {
+    throw new Error('Cannot update past or ongoing tasks.');
+  }
+
+  const updateQ = `
+    UPDATE Tasks
+    SET title = @title,
+        description = @desc,
+        start_at = @start,
+        end_at = @end
+    WHERE id = @id;
+  `;
+  await req.query(updateQ);
+
+  return { success: true };
+}
+
+async function deleteTask(taskId) {
+  await poolConnect;
+  const req = (await poolConnect).request();
+
+  req.input('id', sql.Int, taskId);
+
+  const checkQ = `
+    SELECT COUNT(*) AS cnt
+    FROM Tasks
+    WHERE id = @id AND start_at > GETDATE();
+  `;
+  const checkRes = await req.query(checkQ);
+  if (!checkRes.recordset[0].cnt) {
+    throw new Error('Cannot delete past or ongoing tasks.');
+  }
+
+  await req.query(`
+    DELETE FROM TaskAssignments WHERE task_id = @id;
+  `);
+
+  await req.query(`
+    DELETE FROM Tasks WHERE id = @id;
+  `);
+
+  return { success: true };
+}
+
 module.exports = {
   fetchTasks,
   fetchComments,
@@ -353,5 +413,7 @@ module.exports = {
   getBeekeeperCalendar,
   fetchFutureTasks,
   assignExistingTask,
-  createAndAssignTask
+  createAndAssignTask,
+  updateTask,
+  deleteTask
 };

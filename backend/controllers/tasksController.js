@@ -1,6 +1,7 @@
 const { 
   fetchTasks, fetchComments, fetchCompleted, getBeekeeperCalendar,
-  fetchFutureTasks, assignExistingTask, createAndAssignTask
+  fetchFutureTasks, assignExistingTask, createAndAssignTask, updateTask,
+  deleteTask
  } = require('../services/tasksService');
 
 function n(v) { const x = parseInt(v, 10); return Number.isFinite(x) ? x : undefined; }
@@ -114,6 +115,36 @@ async function createAndAssignTaskCNT(req, res) {
   }
 }
 
+async function updateTaskCNT(req, res) {
+  try {
+    const taskId = n(req.params.id);
+    const { title, description, start_at, end_at } = req.body;
+
+    if (!taskId || !title || !description || !start_at || !end_at) {
+      return res.status(400).json({ message: 'Missing required fields.' });
+    }
+
+    const result = await updateTask({ taskId, title, description, start_at, end_at });
+    res.json(result);
+  } catch (e) {
+    console.error('updateTask error:', e);
+    res.status(400).json({ message: e.message || 'Failed to update task.' });
+  }
+}
+
+async function deleteTaskCNT(req, res) {
+  try {
+    const taskId = n(req.params.id);
+    if (!taskId) return res.status(400).json({ message: 'Task ID is required.' });
+
+    const result = await deleteTask(taskId);
+    res.json(result);
+  } catch (e) {
+    console.error('deleteTask error:', e);
+    res.status(400).json({ message: e.message || 'Failed to delete task.' });
+  }
+}
+
 module.exports = { 
   getTasks, 
   getComments, 
@@ -121,5 +152,7 @@ module.exports = {
   beekeeperCalendarCNT,
   getFutureTasksCNT,
   assignExistingTaskCNT,
-  createAndAssignTaskCNT
+  createAndAssignTaskCNT,
+  updateTaskCNT,
+  deleteTaskCNT
 }
