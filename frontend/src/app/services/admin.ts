@@ -62,4 +62,13 @@ export class Admin {
       { headers: this.authHeaders() }
     );
   }
+
+  getBeekeeperCalendar(beekeeperId: number, from: string, to: string) {
+    const headers = this.authHeaders();
+    const params: any = { beekeeperId, from, to };
+    return this.http.get<{ items: {date: string; status: 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST'}[] }>(
+      'http://localhost:3000/admin/beeCalendar',
+      { headers, params }
+    );
+  }
 }
