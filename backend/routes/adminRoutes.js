@@ -11,5 +11,8 @@ router.get('/comments', ctrl.getComments);
 router.get('/completed', ctrl.getCompleted);
 router.get('/users', usersCtrl.getBeekeepers);
 router.get('/beeCalendar', ctrl.beekeeperCalendarCNT);
+router.get('/tasks/future', ctrl.getFutureTasksCNT);
+router.post('/task-assign', ctrl.assignExistingTaskCNT);
+router.post('/task-create-assign', ctrl.createAndAssignTaskCNT);
 
 module.exports = router;

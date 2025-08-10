@@ -228,10 +228,134 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
   return result;
 }
 
+async function fetchFutureTasks() {
+  await poolConnect;
+  const req = (await poolConnect).request();
+
+  const now = new Date(); 
+  req.input('now', sql.DateTime2, now);
+
+  const q = `
+    SELECT id, title, description, start_at, end_at
+    FROM Tasks
+    WHERE start_at >= @now AND (end_at IS NULL OR end_at >= @now)
+    ORDER BY start_at ASC, id ASC;
+  `;
+
+  const rs = await req.query(q);
+  return rs.recordset || [];
+}
+
+async function assignExistingTask({ beekeeperId, taskId }) {
+  if (!beekeeperId || !taskId) throw new Error('beekeeperId and taskId are required');
+
+  await poolConnect;
+  const now = new Date();
+
+  const req = (await poolConnect).request();
+  req.input('bk', sql.Int, beekeeperId);
+  req.input('tid', sql.Int, taskId);
+  req.input('now', sql.DateTime2, now);
+
+  const u = await req.query(`
+    SELECT id FROM Users
+    WHERE id = @bk AND LOWER(role) = 'user';
+  `);
+  if (!u.recordset.length) throw new Error('Beekeeper not found or not a user');
+
+  const t = await req.query(`
+    SELECT id, start_at, end_at
+    FROM Tasks
+    WHERE id = @tid;
+  `);
+  if (!t.recordset.length) throw new Error('Task not found');
+
+  const row = t.recordset[0];
+  if (new Date(row.start_at).getTime() < now.getTime() ||
+      (row.end_at && new Date(row.end_at).getTime() < now.getTime())) {
+    throw new Error('Task must have start/end in the future');
+  }
+
+  const dup = await req.query(`
+    SELECT TOP 1 1 AS x
+    FROM TaskAssignments
+    WHERE beekeeper_id = @bk AND task_id = @tid
+      AND status IN ('ASSIGNED','IN_PROGRESS');
+  `);
+  if (dup.recordset.length) throw new Error('Task already assigned to this user');
+
+  const insReq = (await poolConnect).request();
+  insReq.input('bk', sql.Int, beekeeperId);
+  insReq.input('tid', sql.Int, taskId);
+  insReq.input('st', sql.VarChar(20), 'ASSIGNED');
+
+  await insReq.query(`
+    INSERT INTO TaskAssignments (beekeeper_id, task_id, status)
+    VALUES (@bk, @tid, @st);
+  `);
+
+  return { ok: true };
+}
+
+async function createAndAssignTask({ beekeeperId, title, description, start_at, end_at }) {
+  if (!beekeeperId || !title || !start_at || !end_at) {
+    throw new Error('beekeeperId, title, start_at and end_at are required');
+  }
+
+  await poolConnect;
+  const now = new Date();
+
+  const start = new Date(start_at);
+  const end   = new Date(end_at);
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    throw new Error('Invalid dates');
+  }
+  if (start.getTime() < now.getTime() || end.getTime() < now.getTime()) {
+    throw new Error('New task must be in the future');
+  }
+  if (end.getTime() < start.getTime()) {
+    throw new Error('end_at must be after start_at');
+  }
+
+  const req = (await poolConnect).request();
+  req.input('bk', sql.Int, beekeeperId);
+  const u = await req.query(`SELECT id FROM Users WHERE id = @bk AND LOWER(role)='user';`);
+  if (!u.recordset.length) throw new Error('Beekeeper not found or not a user');
+
+  const createReq = (await poolConnect).request();
+  createReq.input('title', sql.NVarChar, title);
+  createReq.input('desc', sql.NVarChar, description || '');
+  createReq.input('start', sql.DateTime2, start);
+  createReq.input('end', sql.DateTime2, end);
+  createReq.input('createdBy', '1');
+  createReq.input('sourceType', 'ADMIN');
+
+  const taskRes = await createReq.query(`
+    INSERT INTO Tasks (title, description, start_at, end_at, created_by, source_type)
+    OUTPUT INSERTED.id
+    VALUES (@title, @desc, @start, @end, @createdBy, @sourceType);
+  `);
+  const newTaskId = taskRes.recordset[0].id;
+
+  const assignReq = (await poolConnect).request();
+  assignReq.input('bk', sql.Int, beekeeperId);
+  assignReq.input('tid', sql.Int, newTaskId);
+  assignReq.input('st', sql.VarChar(20), 'ASSIGNED');
+
+  await assignReq.query(`
+    INSERT INTO TaskAssignments (beekeeper_id, task_id, status)
+    VALUES (@bk, @tid, @st);
+  `);
+
+  return { ok: true, taskId: newTaskId };
+}
 
 module.exports = {
   fetchTasks,
   fetchComments,
   fetchCompleted,
-  getBeekeeperCalendar
+  getBeekeeperCalendar,
+  fetchFutureTasks,
+  assignExistingTask,
+  createAndAssignTask
 };
