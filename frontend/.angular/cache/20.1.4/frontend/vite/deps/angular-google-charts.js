@@ -42,12 +42,12 @@ import {
   ɵɵprojection,
   ɵɵprojectionDef,
   ɵɵqueryRefresh
-} from "./chunk-6ZUJCUCY.js";
+} from "./chunk-BONVB36I.js";
 import {
   __objRest,
   __spreadProps,
   __spreadValues
-} from "./chunk-WDMUDEB6.js";
+} from "./chunk-TXDUYLVM.js";
 
 // node_modules/angular-google-charts/fesm2022/angular-google-charts.mjs
 var _c0 = ["*"];

@@ -1,18 +1,19 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule }  from '@angular/material/button';
 import { MatIconModule }    from '@angular/material/icon';
-import { MatTabsModule }    from '@angular/material/tabs';
 import { MatCardModule }    from '@angular/material/card';
 import { UserUiService }    from '../../services/user-ui-service';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 
 interface DayCell {
   date: Date;
-  key: string;      // yyyy-MM-dd
-  label: string;    // day number
+  key: string;
+  label: string;
   status?: DayStatus;
   tasks?: { title: string; description: string }[];
 }
@@ -20,18 +21,15 @@ interface DayCell {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [
-    CommonModule,
-    MatToolbarModule, MatButtonModule, MatIconModule,
-    MatTabsModule, MatCardModule
-  ],
+  imports: [CommonModule, MatToolbarModule, MatButtonModule, MatIconModule, MatCardModule],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
 export class Dashboard implements OnInit {
-  viewMonth = new Date();   // month being viewed
-  daysGrid: DayCell[] = []; // 6x7 grid
+  @ViewChild('calendarCard', { static: false }) calendarCard!: ElementRef;
 
+  viewMonth = new Date();
+  daysGrid: DayCell[] = [];
   loading = false;
   error = '';
 
@@ -45,6 +43,26 @@ export class Dashboard implements OnInit {
   logout() {
     localStorage.clear();
     window.location.href = '/login';
+  }
+
+  async exportPdf() {
+    if (!this.calendarCard) return;
+    const el = this.calendarCard.nativeElement as HTMLElement;
+
+    const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    
+    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+
+    
+    const imgWidth = pageWidth - 48;  
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const y = Math.max(24, (pageHeight - imgHeight) / 2); 
+
+    pdf.addImage(imgData, 'PNG', 24, y, imgWidth, imgHeight, undefined, 'FAST');
+    pdf.save(`calendar-${this.viewMonth.getFullYear()}-${String(this.viewMonth.getMonth()+1).padStart(2,'0')}.pdf`);
   }
 
   onPrevMonth() {
@@ -74,12 +92,12 @@ export class Dashboard implements OnInit {
 
   private buildMonthGrid() {
     const firstDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 1);
-    const startDow = (firstDay.getDay() + 6) % 7; // Monday=0
+    const startDow = (firstDay.getDay() + 6) % 7; 
     const startDate = new Date(firstDay);
     startDate.setDate(firstDay.getDate() - startDow);
 
     const cells: DayCell[] = [];
-    for (let i = 0; i < 42; i++) { // 6 weeks
+    for (let i = 0; i < 42; i++) {
       const d = new Date(startDate);
       d.setDate(startDate.getDate() + i);
       cells.push({
