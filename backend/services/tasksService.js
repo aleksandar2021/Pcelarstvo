@@ -151,12 +151,13 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
   const q = `
     SELECT
       a.id AS assignment_id,
-      a.status AS assignment_status,           -- 'ASSIGNED' | 'DONE' | ...
+      a.status AS assignment_status,
       a.done_at,
       t.id AS task_id,
       t.title,
       t.start_at,
-      t.end_at
+      t.end_at,
+      t.description
     FROM TaskAssignments a
     JOIN Tasks t ON t.id = a.task_id
     WHERE a.beekeeper_id = @bk
@@ -169,11 +170,28 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
   const today = todayDate.getTime();
 
   // group by date
-  const byDate = new Map(); 
+  const byDate = new Map();
   for (const row of rs.recordset) {
     const dayKey = toDateOnly(row.start_at);
-    const bucket = byDate.get(dayKey) || { done: false, future: false, past: false };
 
+    // ensure bucket exists
+    if (!byDate.has(dayKey)) {
+      byDate.set(dayKey, {
+        done: false,
+        future: false,
+        past: false,
+        descriptions: [] 
+      });
+    }
+
+    const bucket = byDate.get(dayKey);
+
+    // push description if available
+    if (row.description) {
+      bucket.descriptions.push(row.description);
+    }
+
+    // determine status flags
     if ((row.assignment_status || '').toUpperCase() === 'DONE') {
       bucket.done = true;
     } else {
@@ -189,23 +207,27 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
         bucket.future = true;
       }
     }
-
-    byDate.set(dayKey, bucket);
   }
 
+  // build final array
   const result = [...byDate.entries()]
     .map(([date, b]) => {
       let status = null;
       if (b.done) status = 'DONE';
       else if (b.future) status = 'ASSIGNED_FUTURE';
       else if (b.past) status = 'ASSIGNED_PAST';
-      return { date, status };
+      return {
+        date,
+        status,
+        descriptions: b.descriptions 
+      };
     })
     .filter(x => !!x.status)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return result;
 }
+
 
 module.exports = {
   fetchTasks,

@@ -79,12 +79,22 @@
                   <div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
 
                   <div *ngFor="let d of daysGrid"
-                      class="day"
-                      [class.outside]="d.date.getMonth() !== viewMonth.getMonth()"
-                      [class.day-done]="d.status === 'DONE'"
-                      [class.day-future]="d.status === 'ASSIGNED_FUTURE'"
-                      [class.day-past]="d.status === 'ASSIGNED_PAST'">
+                    class="day"
+                    [class.outside]="d.date.getMonth() !== viewMonth.getMonth()"
+                    [class.day-done]="d.status === 'DONE'"
+                    [class.day-future]="d.status === 'ASSIGNED_FUTURE'"
+                    [class.day-past]="d.status === 'ASSIGNED_PAST'">
                     <span class="num">{{ d.label }}</span>
+
+                    <!-- Task descriptions -->
+                    <div class="tasks" *ngIf="d.descriptions?.length">
+                      <div class="task" *ngFor="let t of d.descriptions | slice:0:3" [title]="t">
+                        {{ t }}
+                      </div>
+                      <div class="more" *ngIf="(d.descriptions?.length || 0) > 3">
+                        +{{ d.descriptions!.length - 3 }} more
+                      </div>
+                    </div>
                   </div>
                 </div>
 

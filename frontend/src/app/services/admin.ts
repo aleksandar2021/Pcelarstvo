@@ -1,6 +1,13 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 
+export type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
+export interface BeekeeperCalendarItem {
+  date: string;
+  status: DayStatus;
+  descriptions?: string[];  
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -66,7 +73,7 @@ export class Admin {
   getBeekeeperCalendar(beekeeperId: number, from: string, to: string) {
     const headers = this.authHeaders();
     const params: any = { beekeeperId, from, to };
-    return this.http.get<{ items: {date: string; status: 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST'}[] }>(
+    return this.http.get<{ items: BeekeeperCalendarItem[] }>(
       'http://localhost:3000/admin/beeCalendar',
       { headers, params }
     );

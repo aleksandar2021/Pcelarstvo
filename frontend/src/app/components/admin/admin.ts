@@ -42,8 +42,9 @@ export class Admin {
   beekeepers: { id: number; username: string; name: string; surname: string }[] = [];
   selectedBeekeeperId: number | null = null;
 
+  
   viewMonth = new Date();
-  daysGrid: { date: Date; label: string; key: string; status?: DayStatus }[] = [];
+  daysGrid: { date: Date; label: string; key: string; status?: DayStatus; descriptions?: string[]; }[] = [];
 
   constructor(private api: PublicAPIService, private adminAPI: AdminService) {}
 
@@ -187,8 +188,13 @@ export class Admin {
     this.adminAPI.getBeekeeperCalendar(this.selectedBeekeeperId, from, to)
       .subscribe({
         next: (res) => {
-          const map = new Map(res.items.map(x => [x.date, x.status as DayStatus]));
-          this.daysGrid = this.daysGrid.map(c => ({ ...c, status: map.get(c.key) }));
+          debugger;
+          const map = new Map(res.items.map(x => [x.date, x]));
+          this.daysGrid = this.daysGrid.map(c => {
+            const hit = map.get(c.key);
+            return hit ? { ...c, status: hit.status as DayStatus, descriptions: hit.descriptions || [] }
+                      : { ...c, status: undefined, descriptions: [] };
+          });
         },
         error: (e) => console.error('calendar error', e)
       });
