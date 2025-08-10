@@ -38,4 +38,19 @@ async function findUserByUsername(username) {
   return result.recordset[0];
 }
 
-module.exports = { registerUser, findUserByUsername };
+async function listBeekeepers() {
+  await poolConnect;
+  const req = (await poolConnect).request();
+  req.input('role', sql.VarChar, 'user');
+
+  const q = `
+    SELECT id, username, name, surname
+    FROM Users
+    WHERE role = @role
+    ORDER BY username;
+  `;
+  const rs = await req.query(q);
+  return rs.recordset;
+}
+
+module.exports = { registerUser, findUserByUsername, listBeekeepers };
