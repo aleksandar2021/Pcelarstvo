@@ -409,7 +409,6 @@ async function deleteTask(taskId) {
 async function getUserCalendar({ beekeeperId, from, to }) {
   if (!beekeeperId) throw new Error('beekeeperId required');
   if (!from || !to) throw new Error('from and to required');
-  console.log(beekeeperId);
   await poolConnect;
   const req = (await poolConnect).request();
   req.input('bk', sql.Int, beekeeperId);

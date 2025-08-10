@@ -362,4 +362,9 @@ deleteEditedTask() {
       }
     });
   }
+
+  logout() {
+    localStorage.clear();
+    window.location.href = '';
+  }
 }
