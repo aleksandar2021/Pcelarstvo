@@ -168,7 +168,7 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
     FROM TaskAssignments a
     JOIN Tasks t ON t.id = a.task_id
     WHERE a.beekeeper_id = @bk
-      AND CAST(t.start_at AS date) BETWEEN @from AND @to;
+      AND CAST(COALESCE(t.end_at, t.start_at) AS date) BETWEEN @from AND @to;  
   `;
   const rs = await req.query(q);
 
@@ -176,43 +176,29 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
   const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const today = todayDate.getTime();
 
-  // group by date
   const byDate = new Map();
   for (const row of rs.recordset) {
     const dayKey = toDateOnly(row.end_at || row.start_at);
 
-    // ensure bucket exists
     if (!byDate.has(dayKey)) {
-      byDate.set(dayKey, {
-        done: false,
-        future: false,
-        past: false,
-        descriptions: []
-      });
+      byDate.set(dayKey, { done: false, future: false, past: false, descriptions: [] });
     }
-
     const bucket = byDate.get(dayKey);
 
-    // push description if available
-    if (row.description) {
-      bucket.descriptions.push(row.description);
-    }
+    if (row.description) bucket.descriptions.push(row.description);
 
-    // determine status flags
     if ((row.assignment_status || '').toUpperCase() === 'DONE') {
       bucket.done = true;
     } else {
       const start = new Date(row.start_at).getTime();
-      const end = row.end_at ? new Date(row.end_at).getTime() : null;
+      const end   = row.end_at ? new Date(row.end_at).getTime() : null;
 
-      const isFuture = (end || start) >= today;
+      const isFuture  = (end ?? start) >= today;  
       const isOverdue = end ? (end < now.getTime()) : (start < today);
 
       if (isOverdue) bucket.past = true;
       else if (isFuture) bucket.future = true;
-      else {
-        bucket.future = true;
-      }
+      else bucket.future = true;
     }
   }
 
@@ -229,6 +215,7 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
 
   return result;
 }
+
 
 
 async function fetchFutureTasks() {
@@ -287,6 +274,23 @@ async function assignExistingTask({ beekeeperId, taskId }) {
   `);
   if (dup.recordset.length) throw new Error('Task already assigned to this user');
 
+  const chkReq = (await poolConnect).request();
+  chkReq.input('bk', sql.Int, beekeeperId);
+  chkReq.input('end', sql.DateTime2, row.end_at);
+
+  const conflict = await chkReq.query(`
+    SELECT TOP 1 a.id
+    FROM TaskAssignments a
+    JOIN Tasks t2 ON t2.id = a.task_id
+    WHERE a.beekeeper_id = @bk
+      AND CAST(t2.end_at AS date) = CAST(@end AS date);
+  `);
+  if (conflict.recordset.length) {
+    const endDate = new Date(row.end_at);
+    const endKey = `${endDate.getFullYear()}-${String(endDate.getMonth()+1).padStart(2,'0')}-${String(endDate.getDate()).padStart(2,'0')}`;
+    throw new Error(`Assignment already exists for ${endKey}.`);
+  }
+
   const insReq = (await poolConnect).request();
   insReq.input('bk', sql.Int, beekeeperId);
   insReq.input('tid', sql.Int, taskId);
@@ -325,13 +329,29 @@ async function createAndAssignTask({ beekeeperId, title, description, start_at, 
   const u = await req.query(`SELECT id FROM Users WHERE id = @bk AND LOWER(role)='user';`);
   if (!u.recordset.length) throw new Error('Beekeeper not found or not a user');
 
+  const chkReq = (await poolConnect).request();
+  chkReq.input('bk', sql.Int, beekeeperId);
+  chkReq.input('end', sql.DateTime2, end);
+
+  const conflict = await chkReq.query(`
+    SELECT TOP 1 a.id
+    FROM TaskAssignments a
+    JOIN Tasks t2 ON t2.id = a.task_id
+    WHERE a.beekeeper_id = @bk
+      AND CAST(t2.end_at AS date) = CAST(@end AS date);
+  `);
+  if (conflict.recordset.length) {
+    const endKey = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+    throw new Error(`Assignment already exists for ${endKey}.`);
+  }
+
   const createReq = (await poolConnect).request();
   createReq.input('title', sql.NVarChar, title);
   createReq.input('desc', sql.NVarChar, description || '');
   createReq.input('start', sql.DateTime2, start);
   createReq.input('end', sql.DateTime2, end);
-  createReq.input('createdBy', '1');
-  createReq.input('sourceType', 'ADMIN');
+  createReq.input('createdBy', sql.Int, 1);
+  createReq.input('sourceType', sql.VarChar(20), 'ADMIN');
 
   const taskRes = await createReq.query(`
     INSERT INTO Tasks (title, description, start_at, end_at, created_by, source_type)
@@ -352,6 +372,7 @@ async function createAndAssignTask({ beekeeperId, title, description, start_at, 
 
   return { ok: true, taskId: newTaskId };
 }
+
 
 async function updateTask({ taskId, title, description, start_at, end_at }) {
   await poolConnect;
@@ -416,6 +437,7 @@ async function deleteTask(taskId) {
 async function getUserCalendar({ beekeeperId, from, to }) {
   if (!beekeeperId) throw new Error('beekeeperId required');
   if (!from || !to) throw new Error('from and to required');
+
   await poolConnect;
   const req = (await poolConnect).request();
   req.input('bk', sql.Int, beekeeperId);
@@ -435,7 +457,7 @@ async function getUserCalendar({ beekeeperId, from, to }) {
     FROM TaskAssignments a
     JOIN Tasks t ON t.id = a.task_id
     WHERE a.beekeeper_id = @bk
-      AND CAST(t.start_at AS date) BETWEEN @from AND @to;
+      AND CAST(COALESCE(t.end_at, t.start_at) AS date) BETWEEN @from AND @to;
   `;
 
   const rs = await req.query(q);
@@ -444,55 +466,44 @@ async function getUserCalendar({ beekeeperId, from, to }) {
   const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const today = todayDate.getTime();
 
-  const byDate = new Map();
+  const assignments = [];
 
   for (const row of rs.recordset) {
-    const dayKey = toDateOnly(row.end_at);
+    const dayKey = toDateOnly(row.end_at || row.start_at);
 
-    if (!byDate.has(dayKey)) {
-      byDate.set(dayKey, {
-        done: false,
-        future: false,
-        past: false,
-        tasks: [] 
-      });
-    }
-
-    const bucket = byDate.get(dayKey);
-
-    // store title + description
-    bucket.tasks.push({
-      title: row.title || '',
-      description: row.description || ''
-    });
-
-    // determine status
+    let status = null;
     if ((row.assignment_status || '').toUpperCase() === 'DONE') {
-      bucket.done = true;
+      status = 'DONE';
     } else {
       const start = new Date(row.start_at).getTime();
       const end = row.end_at ? new Date(row.end_at).getTime() : null;
 
-      const isFuture = start >= today;
+      const isFuture = (end ?? start) >= today;
       const isOverdue = end ? (end < now.getTime()) : (start < today);
 
-      if (isOverdue) bucket.past = true;
-      else if (isFuture) bucket.future = true;
-      else bucket.future = true;
+      if (isOverdue) status = 'ASSIGNED_PAST';
+      else if (isFuture) status = 'ASSIGNED_FUTURE';
+      else status = 'ASSIGNED_FUTURE';
     }
+
+    assignments.push({
+      assignment_id: row.assignment_id,
+      date: dayKey,
+      status,
+      tasks: [
+        {
+          title: row.title || '',
+          description: row.description || ''
+        }
+      ]
+    });
   }
 
-  return [...byDate.entries()]
-    .map(([date, b]) => {
-      let status = null;
-      if (b.done) status = 'DONE';
-      else if (b.future) status = 'ASSIGNED_FUTURE';
-      else if (b.past) status = 'ASSIGNED_PAST';
-      return { date, status, tasks: b.tasks };
-    })
-    .filter(x => !!x.status)
+  return assignments
+    .filter(a => !!a.status)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
 
 async function markAssignmentDone({ assignmentId, userId, resultNote }) {
   if (!assignmentId || !userId) throw new Error('assignmentId and userId required');
