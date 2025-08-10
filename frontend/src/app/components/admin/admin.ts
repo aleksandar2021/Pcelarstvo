@@ -12,6 +12,7 @@ import { Admin as AdminService } from '../../services/admin';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatTabsModule } from '@angular/material/tabs';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 
 type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 
@@ -22,7 +23,8 @@ type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
     CommonModule, RouterModule,
     MatToolbarModule, MatButtonModule, MatCardModule,
     GoogleChartsModule, MatSelectModule, MatFormFieldModule,
-    MatIconModule, MatDatepickerModule, MatTabsModule
+    MatIconModule, MatDatepickerModule, MatTabsModule,
+    FormsModule, ReactiveFormsModule
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
@@ -41,7 +43,17 @@ export class Admin {
 
   beekeepers: { id: number; username: string; name: string; surname: string }[] = [];
   selectedBeekeeperId: number | null = null;
+  selectedTaskId: number | null = null;
+  futureTasks: any[] = [];
 
+  newTask = {
+    title: '',
+    description: '',
+    start_at: null,
+    end_at: null
+  };
+
+  assignMessage = '';
   
   viewMonth = new Date();
   daysGrid: { date: Date; label: string; key: string; status?: DayStatus; descriptions?: string[]; }[] = [];
@@ -79,7 +91,11 @@ export class Admin {
     this.loadWeather();
     this.loadAQ();
     this.buildMonthGrid();   
-    this.loadBeekeepers();    
+    this.loadBeekeepers();  
+    this.futureTasks = [
+      { id: 101, title: 'Inspect hive #5', start_at: new Date('2025-08-15'), end_at: new Date('2025-08-16') },
+      { id: 102, title: 'Honey extraction', start_at: new Date('2025-08-20'), end_at: new Date('2025-08-22') }
+    ];  
   }
 
   // ------- Weather & AQ -------
@@ -198,5 +214,13 @@ export class Admin {
         },
         error: (e) => console.error('calendar error', e)
       });
+  }
+
+  assignTask() {
+    if (this.selectedTaskId) {
+      this.assignMessage = `Assigned existing task ID ${this.selectedTaskId} to beekeeper ${this.selectedBeekeeperId}`;
+    } else {
+      this.assignMessage = `Created new task "${this.newTask.title}" and assigned to beekeeper ${this.selectedBeekeeperId}`;
+    }
   }
 }

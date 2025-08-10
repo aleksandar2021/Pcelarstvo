@@ -78,4 +78,16 @@ export class Admin {
       { headers, params }
     );
   }
+
+  getFutureTasks() {
+  return this.http.get<any[]>('http://localhost:3000/admin/tasks/future', { headers: this.authHeaders() });
+  }
+
+  assignExistingTask(beekeeperId: number, taskId: number) {
+    return this.http.post('http://localhost:3000/admin/task-assign', { beekeeperId, taskId }, { headers: this.authHeaders() });
+  }
+
+  createAndAssignTask(beekeeperId: number, task: any) {
+    return this.http.post('http://localhost:3000/admin/task-create-assign', { beekeeperId, ...task }, { headers: this.authHeaders() });
+  }
 }

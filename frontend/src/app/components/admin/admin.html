@@ -111,7 +111,63 @@
             <!-- TAB 2: Task Assignment -->
             <mat-tab label="Task Assignment">
               <div class="tab-content">
-                <p>Task Assignment UI will go here…</p>
+                <!-- Select beekeeper -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Select beekeeper (username)</mat-label>
+                  <mat-select [(value)]="selectedBeekeeperId">
+                    <mat-option *ngFor="let b of beekeepers" [value]="b.id">
+                      {{ b.username }} — {{ b.name }} {{ b.surname }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- Select existing task -->
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Select existing future task (optional)</mat-label>
+                  <mat-select [(value)]="selectedTaskId">
+                    <mat-option [value]="null">— None —</mat-option>
+                    <mat-option *ngFor="let t of futureTasks" [value]="t.id">
+                      {{ t.title }} — {{ t.start_at | date:'dd/MM/yyyy' }} → {{ t.end_at | date:'dd/MM/yyyy' }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <!-- OR Create new task -->
+                <div class="new-task-form" *ngIf="!selectedTaskId">
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Title</mat-label>
+                    <input matInput [(ngModel)]="newTask.title">
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput rows="3" [(ngModel)]="newTask.description"></textarea>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Start Date</mat-label>
+                    <input matInput [matDatepicker]="picker1" [(ngModel)]="newTask.start_at">
+                    <mat-datepicker-toggle matSuffix [for]="picker1"></mat-datepicker-toggle>
+                    <mat-datepicker #picker1></mat-datepicker>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>End Date</mat-label>
+                    <input matInput [matDatepicker]="picker2" [(ngModel)]="newTask.end_at">
+                    <mat-datepicker-toggle matSuffix [for]="picker2"></mat-datepicker-toggle>
+                    <mat-datepicker #picker2></mat-datepicker>
+                  </mat-form-field>
+                </div>
+
+                <!-- Assign button -->
+                <button mat-raised-button color="primary"
+                        (click)="assignTask()"
+                        [disabled]="!selectedBeekeeperId || (!selectedTaskId && !newTask.title)">
+                  Assign Task
+                </button>
+
+                <!-- Status -->
+                <div class="muted" *ngIf="assignMessage">{{ assignMessage }}</div>
               </div>
             </mat-tab>
 
