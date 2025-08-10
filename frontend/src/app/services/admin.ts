@@ -1,11 +1,20 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
 
 export type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 export interface BeekeeperCalendarItem {
   date: string;
   status: DayStatus;
   descriptions?: string[];  
+}
+
+export interface TaskLite {
+  id: number;
+  title: string;
+  description?: string;
+  start_at: string;
+  end_at: string;  
 }
 
 @Injectable({
@@ -79,15 +88,26 @@ export class Admin {
     );
   }
 
-  getFutureTasks() {
-  return this.http.get<any[]>('http://localhost:3000/admin/tasks/future', { headers: this.authHeaders() });
+  getFutureTasks(): Observable<{ items: TaskLite[] }> {
+    return this.http.get<{ items: TaskLite[] }>(
+      `${this.baseUrl}/tasks/future`,
+      { headers: this.authHeaders() }
+    );
   }
 
   assignExistingTask(beekeeperId: number, taskId: number) {
-    return this.http.post('http://localhost:3000/admin/task-assign', { beekeeperId, taskId }, { headers: this.authHeaders() });
+    return this.http.post<{ success: true }>(
+      `${this.baseUrl}/task-assign`,
+      { beekeeperId, taskId },
+      { headers: this.authHeaders() }
+    );
   }
 
-  createAndAssignTask(beekeeperId: number, task: any) {
-    return this.http.post('http://localhost:3000/admin/task-create-assign', { beekeeperId, ...task }, { headers: this.authHeaders() });
+  createAndAssignTask(beekeeperId: number, task: { title: string; description?: string; start_at: string; end_at: string; }) {
+    return this.http.post<{ success: true; taskId: number }>(
+      `${this.baseUrl}/task-create-assign`,
+      { beekeeperId, ...task },
+      { headers: this.authHeaders() }
+    );
   }
 }

@@ -35,11 +35,10 @@ import {
   RippleState,
   defaultRippleAnimationConfig
 } from "./chunk-XZNJJTBJ.js";
-import "./chunk-DQ7OVFPD.js";
-import "./chunk-5CZKALO4.js";
 import {
   _StructuralStylesLoader
 } from "./chunk-46X7VOHW.js";
+import "./chunk-5CZKALO4.js";
 import {
   AnimationCurves,
   AnimationDurations,
@@ -47,15 +46,16 @@ import {
   _animationsDisabled,
   _getAnimationsState
 } from "./chunk-5LJOYBL7.js";
-import "./chunk-EOFW2REK.js";
+import "./chunk-DQ7OVFPD.js";
 import {
   MATERIAL_SANITY_CHECKS,
   MatCommonModule
 } from "./chunk-W2VLPWFF.js";
 import "./chunk-B47GPPKE.js";
+import "./chunk-EOFW2REK.js";
 import "./chunk-OWZ4M623.js";
-import "./chunk-USZDOBCM.js";
 import "./chunk-HTZLTVBD.js";
+import "./chunk-USZDOBCM.js";
 import "./chunk-NDZIWK7R.js";
 import {
   ChangeDetectionStrategy,

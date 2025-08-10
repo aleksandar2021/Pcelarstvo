@@ -126,7 +126,7 @@
                   <mat-label>Select existing future task (optional)</mat-label>
                   <mat-select [(value)]="selectedTaskId">
                     <mat-option [value]="null">— None —</mat-option>
-                    <mat-option *ngFor="let t of futureTasks" [value]="t.id">
+                    <mat-option *ngFor="let t of futureTasks" [value]="t.id" matTooltip="{{ t.description }}">
                       {{ t.title }} — {{ t.start_at | date:'dd/MM/yyyy' }} → {{ t.end_at | date:'dd/MM/yyyy' }}
                     </mat-option>
                   </mat-select>

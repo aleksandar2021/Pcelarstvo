@@ -9,14 +9,11 @@ import {
   ViewportRuler
 } from "./chunk-PVB4DIAW.js";
 import {
-  coerceCssPixelValue
-} from "./chunk-DQ7OVFPD.js";
-import {
   _isTestEnvironment
 } from "./chunk-5CZKALO4.js";
 import {
-  supportsScrollBehavior
-} from "./chunk-EOFW2REK.js";
+  coerceCssPixelValue
+} from "./chunk-DQ7OVFPD.js";
 import {
   ESCAPE,
   _IdGenerator,
@@ -28,15 +25,18 @@ import {
   _CdkPrivateStyleLoader
 } from "./chunk-B47GPPKE.js";
 import {
+  supportsScrollBehavior
+} from "./chunk-EOFW2REK.js";
+import {
   Platform
 } from "./chunk-OWZ4M623.js";
-import {
-  Location
-} from "./chunk-USZDOBCM.js";
 import {
   BidiModule,
   Directionality
 } from "./chunk-HTZLTVBD.js";
+import {
+  Location
+} from "./chunk-USZDOBCM.js";
 import {
   ANIMATION_MODULE_TYPE,
   ApplicationRef,
@@ -2893,4 +2893,4 @@ export {
   CdkConnectedOverlay,
   OverlayModule
 };
-//# sourceMappingURL=chunk-OTV4X5KC.js.map
+//# sourceMappingURL=chunk-JMD66QIM.js.map

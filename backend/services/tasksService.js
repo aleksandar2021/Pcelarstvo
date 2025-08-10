@@ -172,7 +172,7 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
   // group by date
   const byDate = new Map();
   for (const row of rs.recordset) {
-    const dayKey = toDateOnly(row.start_at);
+    const dayKey = toDateOnly(row.end_at || row.start_at);
 
     // ensure bucket exists
     if (!byDate.has(dayKey)) {
@@ -180,7 +180,7 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
         done: false,
         future: false,
         past: false,
-        descriptions: [] 
+        descriptions: []
       });
     }
 
@@ -198,7 +198,7 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
       const start = new Date(row.start_at).getTime();
       const end = row.end_at ? new Date(row.end_at).getTime() : null;
 
-      const isFuture = start >= today;
+      const isFuture = (end || start) >= today;
       const isOverdue = end ? (end < now.getTime()) : (start < today);
 
       if (isOverdue) bucket.past = true;
@@ -209,24 +209,20 @@ async function getBeekeeperCalendar({ beekeeperId, from, to }) {
     }
   }
 
-  // build final array
   const result = [...byDate.entries()]
     .map(([date, b]) => {
       let status = null;
       if (b.done) status = 'DONE';
       else if (b.future) status = 'ASSIGNED_FUTURE';
       else if (b.past) status = 'ASSIGNED_PAST';
-      return {
-        date,
-        status,
-        descriptions: b.descriptions 
-      };
+      return { date, status, descriptions: b.descriptions };
     })
     .filter(x => !!x.status)
     .sort((a, b) => a.date.localeCompare(b.date));
 
   return result;
 }
+
 
 async function fetchFutureTasks() {
   await poolConnect;

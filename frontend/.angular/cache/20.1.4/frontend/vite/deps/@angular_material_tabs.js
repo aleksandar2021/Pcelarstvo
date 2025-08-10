@@ -1,11 +1,11 @@
 import {
+  SharedResizeObserver
+} from "./chunk-LF2AOSCV.js";
+import {
   CdkPortal,
   CdkPortalOutlet,
   TemplatePortal
 } from "./chunk-CXZ3YQIP.js";
-import {
-  SharedResizeObserver
-} from "./chunk-LF2AOSCV.js";
 import {
   CdkScrollable,
   ViewportRuler
@@ -14,15 +14,14 @@ import {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   MatRipple
 } from "./chunk-XZNJJTBJ.js";
-import "./chunk-DQ7OVFPD.js";
-import "./chunk-5CZKALO4.js";
 import {
   _StructuralStylesLoader
 } from "./chunk-46X7VOHW.js";
+import "./chunk-5CZKALO4.js";
 import {
   _animationsDisabled
 } from "./chunk-5LJOYBL7.js";
-import "./chunk-EOFW2REK.js";
+import "./chunk-DQ7OVFPD.js";
 import {
   CdkMonitorFocus,
   CdkObserveContent,
@@ -37,13 +36,14 @@ import {
 import {
   _CdkPrivateStyleLoader
 } from "./chunk-B47GPPKE.js";
+import "./chunk-EOFW2REK.js";
 import {
   Platform
 } from "./chunk-OWZ4M623.js";
-import "./chunk-USZDOBCM.js";
 import {
   Directionality
 } from "./chunk-HTZLTVBD.js";
+import "./chunk-USZDOBCM.js";
 import "./chunk-NDZIWK7R.js";
 import {
   BehaviorSubject,

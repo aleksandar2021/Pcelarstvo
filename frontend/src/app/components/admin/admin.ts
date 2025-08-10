@@ -8,11 +8,14 @@ import { GoogleChartsModule } from 'angular-google-charts';
 import { PublicAPIService } from '../../services/public-apiservice';
 import { MatSelectModule } from '@angular/material/select';
 import { MatFormFieldModule } from '@angular/material/form-field';
-import { Admin as AdminService } from '../../services/admin';
+import { Admin as AdminService, TaskLite } from '../../services/admin';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatTabsModule } from '@angular/material/tabs';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
+import { MatInputModule } from '@angular/material/input';
+import { MatNativeDateModule } from '@angular/material/core';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 
@@ -24,7 +27,8 @@ type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
     MatToolbarModule, MatButtonModule, MatCardModule,
     GoogleChartsModule, MatSelectModule, MatFormFieldModule,
     MatIconModule, MatDatepickerModule, MatTabsModule,
-    FormsModule, ReactiveFormsModule
+    FormsModule, ReactiveFormsModule, MatInputModule,
+    MatNativeDateModule, MatTooltipModule
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
@@ -44,16 +48,17 @@ export class Admin {
   beekeepers: { id: number; username: string; name: string; surname: string }[] = [];
   selectedBeekeeperId: number | null = null;
   selectedTaskId: number | null = null;
-  futureTasks: any[] = [];
+  futureTasks: TaskLite[] = [];
+  assignMessage = '';
+  assigning = false;
 
   newTask = {
     title: '',
     description: '',
-    start_at: null,
-    end_at: null
+    start_at: null as Date | null,
+    end_at: null as Date | null
   };
 
-  assignMessage = '';
   
   viewMonth = new Date();
   daysGrid: { date: Date; label: string; key: string; status?: DayStatus; descriptions?: string[]; }[] = [];
@@ -92,10 +97,7 @@ export class Admin {
     this.loadAQ();
     this.buildMonthGrid();   
     this.loadBeekeepers();  
-    this.futureTasks = [
-      { id: 101, title: 'Inspect hive #5', start_at: new Date('2025-08-15'), end_at: new Date('2025-08-16') },
-      { id: 102, title: 'Honey extraction', start_at: new Date('2025-08-20'), end_at: new Date('2025-08-22') }
-    ];  
+    this.loadFutureTasks();  
   }
 
   // ------- Weather & AQ -------
@@ -216,11 +218,58 @@ export class Admin {
       });
   }
 
+  loadFutureTasks() {
+    this.adminAPI.getFutureTasks().subscribe({
+      next: (res) => {
+        debugger;
+        this.futureTasks = res.items || [];
+      },
+      error: (e) => console.error('future tasks load error', e)
+    });
+  }
+
   assignTask() {
+    if (!this.selectedBeekeeperId) return;
+    this.assigning = true;
+    this.assignMessage = '';
+
     if (this.selectedTaskId) {
-      this.assignMessage = `Assigned existing task ID ${this.selectedTaskId} to beekeeper ${this.selectedBeekeeperId}`;
+      // assign existing
+      this.adminAPI.assignExistingTask(this.selectedBeekeeperId, this.selectedTaskId).subscribe({
+        next: () => {
+          this.assignMessage = 'Task assigned successfully.';
+          this.assigning = false;
+          this.loadCalendar();   
+        },
+        error: (e) => {
+          this.assignMessage = 'Task already asigned to this user, pick another!';
+          this.assigning = false;
+        }
+      });
     } else {
-      this.assignMessage = `Created new task "${this.newTask.title}" and assigned to beekeeper ${this.selectedBeekeeperId}`;
+      // create + assign
+      const startISO = this.newTask.start_at ? this.newTask.start_at.toISOString() : '';
+      const endISO   = this.newTask.end_at   ? this.newTask.end_at.toISOString()   : '';
+
+      this.adminAPI.createAndAssignTask(this.selectedBeekeeperId, {
+        title: this.newTask.title.trim(),
+        description: this.newTask.description?.trim(),
+        start_at: startISO,
+        end_at: endISO
+      }).subscribe({
+        next: () => {
+          this.assignMessage = 'New task created and assigned successfully.';
+          this.assigning = false;
+          this.selectedTaskId = null;
+          this.newTask = { title: '', description: '', start_at: null, end_at: null };
+          this.loadFutureTasks();
+          this.loadCalendar();
+        },
+        error: (e) => {
+          this.assignMessage = e?.error?.message || 'Failed to create/assign task.';
+          this.assigning = false;
+        }
+      });
     }
   }
 }
