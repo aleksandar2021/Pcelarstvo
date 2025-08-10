@@ -1,9 +1,10 @@
-import { Component, OnInit, ViewChild, ElementRef } from '@angular/core';
+import { Component, OnInit, ViewChild, ElementRef, Inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatToolbarModule } from '@angular/material/toolbar';
 import { MatButtonModule }  from '@angular/material/button';
 import { MatIconModule }    from '@angular/material/icon';
 import { MatCardModule }    from '@angular/material/card';
+import { MatDialog, MatDialogModule, MAT_DIALOG_DATA, MatDialogRef } from '@angular/material/dialog';
 import { UserUiService }    from '../../services/user-ui-service';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
@@ -21,7 +22,11 @@ interface DayCell {
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, MatToolbarModule, MatButtonModule, MatIconModule, MatCardModule],
+  imports: [
+    CommonModule,
+    MatToolbarModule, MatButtonModule, MatIconModule, MatCardModule,
+    MatDialogModule
+  ],
   templateUrl: './dashboard.html',
   styleUrl: './dashboard.scss'
 })
@@ -33,7 +38,7 @@ export class Dashboard implements OnInit {
   loading = false;
   error = '';
 
-  constructor(private api: UserUiService) {}
+  constructor(private api: UserUiService, private dialog: MatDialog) {}
 
   ngOnInit(): void {
     this.buildMonthGrid();
@@ -51,15 +56,14 @@ export class Dashboard implements OnInit {
 
     const canvas = await html2canvas(el, { scale: 2, useCORS: true });
     const imgData = canvas.toDataURL('image/png');
-    
+
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
     const pageWidth = pdf.internal.pageSize.getWidth();
     const pageHeight = pdf.internal.pageSize.getHeight();
 
-    
-    const imgWidth = pageWidth - 48;  
+    const imgWidth = pageWidth - 48;
     const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const y = Math.max(24, (pageHeight - imgHeight) / 2); 
+    const y = Math.max(24, (pageHeight - imgHeight) / 2);
 
     pdf.addImage(imgData, 'PNG', 24, y, imgWidth, imgHeight, undefined, 'FAST');
     pdf.save(`calendar-${this.viewMonth.getFullYear()}-${String(this.viewMonth.getMonth()+1).padStart(2,'0')}.pdf`);
@@ -92,7 +96,7 @@ export class Dashboard implements OnInit {
 
   private buildMonthGrid() {
     const firstDay = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth(), 1);
-    const startDow = (firstDay.getDay() + 6) % 7; 
+    const startDow = (firstDay.getDay() + 6) % 7;
     const startDate = new Date(firstDay);
     startDate.setDate(firstDay.getDate() - startDow);
 
@@ -118,7 +122,7 @@ export class Dashboard implements OnInit {
 
     this.api.getUserCalendar(from, to).subscribe({
       next: (res) => {
-        const map = new Map(res.items.map(it => [it.date, it]));
+        const map = new Map(res.items.map((it: any) => [it.date, it]));
         this.daysGrid = this.daysGrid.map(c => {
           const hit = map.get(c.key);
           return hit
@@ -133,4 +137,37 @@ export class Dashboard implements OnInit {
       }
     });
   }
+
+  onDayClick(d: DayCell) {
+    const populated = (d.tasks && d.tasks.length > 0) && !!d.status;
+    if (!populated) return;
+
+    this.dialog.open(AssignmentDialog, {
+      width: '420px',
+      data: {
+        date: d.key
+      }
+    });
+  }
+}
+
+@Component({
+  selector: 'app-assignment-dialog',
+  standalone: true,
+  imports: [CommonModule, MatDialogModule, MatButtonModule, MatIconModule],
+  template: `
+    <h2 mat-dialog-title>Assignment</h2>
+    <div mat-dialog-content>
+      <!-- We'll fill details later -->
+    </div>
+    <div mat-dialog-actions align="end">
+      <button mat-button mat-dialog-close>Close</button>
+    </div>
+  `
+})
+export class AssignmentDialog {
+  constructor(
+    public dialogRef: MatDialogRef<AssignmentDialog>,
+    @Inject(MAT_DIALOG_DATA) public data: { date: string }
+  ) {}
 }

@@ -26,7 +26,9 @@
              [class.outside]="d.date.getMonth() !== viewMonth.getMonth()"
              [class.day-done]="d.status === 'DONE'"
              [class.day-future]="d.status === 'ASSIGNED_FUTURE'"
-             [class.day-past]="d.status === 'ASSIGNED_PAST'">
+             [class.day-past]="d.status === 'ASSIGNED_PAST'"
+             [class.clickable]="(d.tasks?.length || 0) > 0 && !!d.status"
+             (click)="onDayClick(d)">
           <span class="num">{{ d.label }}</span>
 
           <div class="tasks" *ngIf="d.tasks?.length">
