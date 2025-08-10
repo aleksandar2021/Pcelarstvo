@@ -50,7 +50,17 @@
           <mat-card-title>Admin tools</mat-card-title>
         </mat-card-header>
         <mat-card-content>
-          <p class="muted">TO BE IMPLEMENTED</p>
+          <mat-form-field appearance="outline" class="w-full">
+            <mat-label>Select beekeeper (username)</mat-label>
+            <mat-select [(value)]="selectedBeekeeperId">
+              <mat-option *ngFor="let b of beekeepers" [value]="b.id">
+                {{ b.username }} — {{ b.name }} {{ b.surname }}
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <div class="muted" *ngIf="!beekeepers.length">No users found.</div>
+          <div class="muted" *ngIf="selectedBeekeeperId">Selected ID: {{ selectedBeekeeperId }}</div>
         </mat-card-content>
       </mat-card>
     </div>

@@ -6,13 +6,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatCardModule } from '@angular/material/card';
 import { GoogleChartsModule } from 'angular-google-charts';
 import { PublicAPIService } from '../../services/public-apiservice';
+import { MatSelectModule } from '@angular/material/select';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { Admin as AdminService } from '../../services/admin';
 
 @Component({
   selector: 'app-admin',
   imports: [
     CommonModule, RouterModule,
     MatToolbarModule, MatButtonModule, MatCardModule,
-    GoogleChartsModule
+    GoogleChartsModule, MatSelectModule, MatFormFieldModule
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'
@@ -29,7 +32,10 @@ export class Admin {
   weatherError = '';
   aqError = '';
 
-  constructor(private api: PublicAPIService) {}
+  beekeepers: {id:number;username:string;name:string;surname:string}[] = [];
+  selectedBeekeeperId: number | null = null; 
+
+  constructor(private api: PublicAPIService, private adminAPI: AdminService) {}
 
   weatherChart: any = {
     chartType: 'LineChart',
@@ -62,6 +68,7 @@ export class Admin {
   ngOnInit() {
     this.loadWeather();
     this.loadAQ();
+    this.loadBeekeepers();
   }
 
   loadWeather() {
@@ -105,5 +112,12 @@ export class Admin {
           this.loadingAQ = false;
         }
       });
+  }
+
+  loadBeekeepers() {
+    this.adminAPI.getBeekeepers().subscribe({
+      next: (res) => this.beekeepers = res.items || [],
+      error: (e) => console.error('beekeepers load error', e)
+    });
   }
 }

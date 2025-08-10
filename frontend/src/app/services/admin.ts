@@ -55,4 +55,11 @@ export class Admin {
       { headers: this.authHeaders(), params: p }
     );
   }
+
+  getBeekeepers() {
+    return this.http.get<{ items: {id:number;username:string;name:string;surname:string}[] }>(
+      'http://localhost:3000/admin/users',
+      { headers: this.authHeaders() }
+    );
+  }
 }
