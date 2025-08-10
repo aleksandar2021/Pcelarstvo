@@ -110,4 +110,19 @@ export class Admin {
       { headers: this.authHeaders() }
     );
   }
+
+  updateTask(taskId: number, data: { title: string; description?: string; start_at: string; end_at: string; }) {
+    return this.http.put<{ success: true }>(
+      `${this.baseUrl}/tasks/${taskId}`,
+      data,
+      { headers: this.authHeaders() }
+    );
+  }
+
+  deleteTask(taskId: number) {
+    return this.http.delete<{ success: true }>(
+      `${this.baseUrl}/tasks/${taskId}`,
+      { headers: this.authHeaders() }
+    );
+  }
 }

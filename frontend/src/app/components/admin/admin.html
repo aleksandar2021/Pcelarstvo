@@ -174,7 +174,56 @@
             <!-- TAB 3: Task Modification -->
             <mat-tab label="Task Modification">
               <div class="tab-content">
-                <p>Task Modification UI will go here…</p>
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Select future task</mat-label>
+                  <mat-select [(value)]="selectedEditTaskId" (selectionChange)="onPickTaskForEdit()">
+                    <mat-option [value]="null">— None —</mat-option>
+                    <mat-option *ngFor="let t of editTasks" [value]="t.id" [matTooltip]="t.description || ''">
+                      {{ t.title }} — {{ t.start_at | date:'dd/MM/yyyy' }} → {{ t.end_at | date:'dd/MM/yyyy' }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
+
+                <div *ngIf="selectedEditTaskId" class="new-task-form">
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Title</mat-label>
+                    <input matInput [(ngModel)]="editTask.title">
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Description</mat-label>
+                    <textarea matInput rows="3" [(ngModel)]="editTask.description"></textarea>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>Start Date</mat-label>
+                    <input matInput [matDatepicker]="dpEdit1" [(ngModel)]="editTask.start_at">
+                    <mat-datepicker-toggle matSuffix [for]="dpEdit1"></mat-datepicker-toggle>
+                    <mat-datepicker #dpEdit1></mat-datepicker>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline" class="w-full">
+                    <mat-label>End Date</mat-label>
+                    <input matInput [matDatepicker]="dpEdit2" [(ngModel)]="editTask.end_at">
+                    <mat-datepicker-toggle matSuffix [for]="dpEdit2"></mat-datepicker-toggle>
+                    <mat-datepicker #dpEdit2></mat-datepicker>
+                  </mat-form-field>
+
+                  <div style="display:flex; gap:12px;">
+                    <button mat-raised-button color="primary"
+                            (click)="saveEditedTask()"
+                            [disabled]="editing || !editTask.title || !editTask.start_at || !editTask.end_at">
+                      Save Changes
+                    </button>
+
+                    <button mat-stroked-button color="warn"
+                            (click)="deleteEditedTask()"
+                            [disabled]="editing">
+                      Delete Task
+                    </button>
+                  </div>
+                  <div class="muted" *ngIf="editMsg">{{ editMsg }}</div>
+                </div>
               </div>
             </mat-tab>
           </mat-tab-group>

@@ -59,6 +59,18 @@ export class Admin {
     end_at: null as Date | null
   };
 
+  editTasks: TaskLite[] = [];
+  selectedEditTaskId: number | null = null;
+  editing = false;
+  editMsg = '';
+
+  editTask = {
+    title: '',
+    description: '',
+    start_at: null as Date | null,
+    end_at: null as Date | null
+  };
+
   
   viewMonth = new Date();
   daysGrid: { date: Date; label: string; key: string; status?: DayStatus; descriptions?: string[]; }[] = [];
@@ -97,7 +109,8 @@ export class Admin {
     this.loadAQ();
     this.buildMonthGrid();   
     this.loadBeekeepers();  
-    this.loadFutureTasks();  
+    this.loadFutureTasks(); 
+    this.loadEditableTasks(); 
   }
 
   // ------- Weather & AQ -------
@@ -221,7 +234,6 @@ export class Admin {
   loadFutureTasks() {
     this.adminAPI.getFutureTasks().subscribe({
       next: (res) => {
-        debugger;
         this.futureTasks = res.items || [];
       },
       error: (e) => console.error('future tasks load error', e)
@@ -271,5 +283,83 @@ export class Admin {
         }
       });
     }
+  }
+
+private loadEditableTasks() {
+  this.adminAPI.getFutureTasks().subscribe({
+      next: (res) => { this.editTasks = res.items || []; },
+      error: (e) => console.error('loadEditableTasks error', e)
+  });
+}
+
+onPickTaskForEdit() {
+  this.editMsg = '';
+  const t = this.editTasks.find(x => x.id === this.selectedEditTaskId);
+  if (!t) {
+    this.editTask = { title: '', description: '', start_at: null, end_at: null };
+    return;
+  }
+  this.editTask = {
+    title: t.title || '',
+    description: t.description || '',
+    start_at: t.start_at ? new Date(t.start_at) : null,
+    end_at: t.end_at ? new Date(t.end_at) : null
+  };
+}
+
+saveEditedTask() {
+  if (!this.selectedEditTaskId || !this.editTask.title || !this.editTask.start_at || !this.editTask.end_at) return;
+
+  this.editing = true;
+  this.editMsg = '';
+
+  const payload = {
+    title: this.editTask.title.trim(),
+    description: this.editTask.description?.trim() || '',
+    start_at: this.editTask.start_at.toISOString(),
+    end_at: this.editTask.end_at.toISOString()
+  };
+
+  this.adminAPI.updateTask(this.selectedEditTaskId, payload).subscribe({
+    next: () => {
+      this.editMsg = 'Task updated.';
+      this.editing = false;
+      // refresh lists
+      this.loadEditableTasks();
+      this.loadFutureTasks();
+      if (this.selectedBeekeeperId) this.loadCalendar();
+    },
+    error: (e) => {
+      this.editMsg = e?.error?.message || 'Failed to update task.';
+      this.editing = false;
+    }
+  });
+}
+
+deleteEditedTask() {
+    if (!this.selectedEditTaskId) return;
+
+    if (!confirm('Delete this task? Assignments to this task will be removed.')) return;
+
+    this.editing = true;
+    this.editMsg = '';
+
+    this.adminAPI.deleteTask(this.selectedEditTaskId).subscribe({
+      next: () => {
+        this.editMsg = 'Task deleted.';
+        this.editing = false;
+        // clear form
+        this.selectedEditTaskId = null;
+        this.editTask = { title: '', description: '', start_at: null, end_at: null };
+        // refresh lists
+        this.loadEditableTasks();
+        this.loadFutureTasks();
+        if (this.selectedBeekeeperId) this.loadCalendar();
+      },
+      error: (e) => {
+        this.editMsg = e?.error?.message || 'Failed to delete task.';
+        this.editing = false;
+      }
+    });
   }
 }
