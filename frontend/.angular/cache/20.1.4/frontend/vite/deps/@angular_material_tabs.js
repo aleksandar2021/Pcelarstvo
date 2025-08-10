@@ -1,29 +1,24 @@
 import {
-  SharedResizeObserver
-} from "./chunk-75JCTVE3.js";
-import {
   CdkPortal,
   CdkPortalOutlet,
   TemplatePortal
-} from "./chunk-JQVMWCR2.js";
-import {
-  CdkScrollable,
-  ViewportRuler
-} from "./chunk-MO7F4LWK.js";
+} from "./chunk-II2FCWDI.js";
 import {
   MAT_RIPPLE_GLOBAL_OPTIONS,
   MatRipple
-} from "./chunk-ISFXMMNI.js";
+} from "./chunk-BD7OLDQC.js";
 import {
   _StructuralStylesLoader
-} from "./chunk-KSR2SZIL.js";
-import "./chunk-YDOKMMVJ.js";
+} from "./chunk-K2556SO5.js";
+import {
+  SharedResizeObserver
+} from "./chunk-6CXMNT5T.js";
+import "./chunk-UNKJ7FS3.js";
+import "./chunk-QCETVJKM.js";
 import {
   _animationsDisabled
-} from "./chunk-QVYD3SQ5.js";
+} from "./chunk-I6MR5OQT.js";
 import "./chunk-DQ7OVFPD.js";
-import "./chunk-QCETVJKM.js";
-import "./chunk-EOFW2REK.js";
 import {
   CdkMonitorFocus,
   CdkObserveContent,
@@ -34,27 +29,30 @@ import {
   SPACE,
   _IdGenerator,
   hasModifierKey
-} from "./chunk-X67SN35C.js";
+} from "./chunk-WMUHVMJU.js";
 import {
   _CdkPrivateStyleLoader
-} from "./chunk-RSENVDYD.js";
+} from "./chunk-ZW7JKXHT.js";
 import {
-  Directionality
-} from "./chunk-CODNF7DL.js";
+  CdkScrollable,
+  ViewportRuler
+} from "./chunk-ULVPIIAC.js";
+import "./chunk-EOFW2REK.js";
 import {
   Platform
-} from "./chunk-GUKU2ROB.js";
-import "./chunk-HHIHJHP4.js";
+} from "./chunk-A7A7JKOO.js";
+import {
+  Directionality
+} from "./chunk-HBRXMV6Z.js";
+import "./chunk-PO3W7GMY.js";
 import "./chunk-NDZIWK7R.js";
 import {
-  BehaviorSubject,
   ChangeDetectionStrategy,
   ChangeDetectorRef,
   Component,
   ContentChild,
   ContentChildren,
   Directive,
-  EMPTY,
   ElementRef,
   EventEmitter,
   HostAttributeToken,
@@ -63,12 +61,9 @@ import {
   Input,
   NgModule,
   NgZone,
-  Observable,
   Output,
   QueryList,
   Renderer2,
-  Subject,
-  Subscription,
   TemplateRef,
   ViewChild,
   ViewChildren,
@@ -77,20 +72,11 @@ import {
   afterNextRender,
   booleanAttribute,
   computed,
-  debounceTime,
-  filter,
   forwardRef,
   inject,
-  merge,
   numberAttribute,
-  of,
   setClassMetadata,
   signal,
-  skip,
-  startWith,
-  switchMap,
-  takeUntil,
-  timer,
   ɵɵInheritDefinitionFeature,
   ɵɵNgOnChangesFeature,
   ɵɵProvidersFeature,
@@ -129,7 +115,23 @@ import {
   ɵɵtext,
   ɵɵtextInterpolate,
   ɵɵviewQuery
-} from "./chunk-NNJGR2TI.js";
+} from "./chunk-XI3T76QP.js";
+import {
+  BehaviorSubject,
+  EMPTY,
+  Observable,
+  Subject,
+  Subscription,
+  debounceTime,
+  filter,
+  merge,
+  of,
+  skip,
+  startWith,
+  switchMap,
+  takeUntil,
+  timer
+} from "./chunk-3KKC7HMJ.js";
 import "./chunk-TXDUYLVM.js";
 
 // node_modules/@angular/material/fesm2022/tabs.mjs

@@ -482,7 +482,6 @@ async function getUserCalendar({ beekeeperId, from, to }) {
       const isOverdue = end ? (end < now.getTime()) : (start < today);
 
       if (isOverdue) status = 'ASSIGNED_PAST';
-      else if (isFuture) status = 'ASSIGNED_FUTURE';
       else status = 'ASSIGNED_FUTURE';
     }
 
@@ -492,6 +491,7 @@ async function getUserCalendar({ beekeeperId, from, to }) {
       status,
       tasks: [
         {
+          assignment_id: row.assignment_id, 
           title: row.title || '',
           description: row.description || ''
         }
@@ -503,6 +503,7 @@ async function getUserCalendar({ beekeeperId, from, to }) {
     .filter(a => !!a.status)
     .sort((a, b) => a.date.localeCompare(b.date));
 }
+
 
 
 async function markAssignmentDone({ assignmentId, userId, resultNote }) {
