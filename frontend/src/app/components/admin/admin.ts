@@ -11,6 +11,7 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { Admin as AdminService } from '../../services/admin';
 import { MatIconModule } from '@angular/material/icon';
 import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatTabsModule } from '@angular/material/tabs';
 
 type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 
@@ -21,7 +22,7 @@ type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
     CommonModule, RouterModule,
     MatToolbarModule, MatButtonModule, MatCardModule,
     GoogleChartsModule, MatSelectModule, MatFormFieldModule,
-    MatIconModule, MatDatepickerModule
+    MatIconModule, MatDatepickerModule, MatTabsModule
   ],
   templateUrl: './admin.html',
   styleUrl: './admin.scss'

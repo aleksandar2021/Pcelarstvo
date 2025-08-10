@@ -7,6 +7,7 @@
 
 <div class="page">
   <div class="layout">
+    <!-- LEFT COLUMN -->
     <div class="left">
       <mat-card class="card">
         <mat-card-header>
@@ -43,51 +44,74 @@
       </mat-card>
     </div>
 
-    
+    <!-- RIGHT COLUMN -->
     <div class="right">
       <mat-card class="card right-box">
         <mat-card-header>
           <mat-card-title>Admin tools</mat-card-title>
         </mat-card-header>
-        <mat-card-content>
-          <mat-form-field appearance="outline" class="w-full">
-            <mat-label>Select beekeeper (username)</mat-label>
-            <mat-select [(value)]="selectedBeekeeperId">
-              <mat-option *ngFor="let b of beekeepers" [value]="b.id">
-                {{ b.username }} — {{ b.name }} {{ b.surname }}
-              </mat-option>
-            </mat-select>
-          </mat-form-field>
-          <!-- Month controller -->
-          <div class="cal-header" *ngIf="selectedBeekeeperId">
-            <button mat-stroked-button (click)="onPrevMonth()"><mat-icon>chevron_left</mat-icon></button>
-            <div class="month-label">
-              {{ viewMonth | date:'MMMM yyyy' }}
-            </div>
-            <button mat-stroked-button (click)="onNextMonth()"><mat-icon>chevron_right</mat-icon></button>
-          </div>
-          <!-- Days labels -->
-          <div class="cal-grid" *ngIf="selectedBeekeeperId">
-            <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div>
-            <div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
+        <mat-card-content class="admin-content">
+          <mat-tab-group>
+            <!-- TAB 1: Calendar -->
+            <mat-tab label="Calendar">
+              <div class="tab-content">
+                <mat-form-field appearance="outline" class="w-full">
+                  <mat-label>Select beekeeper (username)</mat-label>
+                  <mat-select [(value)]="selectedBeekeeperId" (selectionChange)="onBeekeeperSelected()">
+                    <mat-option *ngFor="let b of beekeepers" [value]="b.id">
+                      {{ b.username }} — {{ b.name }} {{ b.surname }}
+                    </mat-option>
+                  </mat-select>
+                </mat-form-field>
 
-            <div *ngFor="let d of daysGrid"
-                class="day"
-                [class.outside]="d.date.getMonth() !== viewMonth.getMonth()"
-                [class.day-done]="d.status === 'DONE'"
-                [class.day-future]="d.status === 'ASSIGNED_FUTURE'"
-                [class.day-past]="d.status === 'ASSIGNED_PAST'">
-              <span class="num">{{ d.label }}</span>
-            </div>
-          </div>
+                <!-- Month controller -->
+                <div class="cal-header" *ngIf="selectedBeekeeperId">
+                  <button mat-stroked-button (click)="onPrevMonth()"><mat-icon>chevron_left</mat-icon></button>
+                  <div class="month-label">
+                    {{ viewMonth | date:'MMMM yyyy' }}
+                  </div>
+                  <button mat-stroked-button (click)="onNextMonth()"><mat-icon>chevron_right</mat-icon></button>
+                </div>
 
-          <div class="legend" *ngIf="selectedBeekeeperId">
-            <span class="swatch done"></span> Done
-            <span class="swatch future"></span> Assigned (future)
-            <span class="swatch past"></span> Assigned (overdue)
-          </div>
+                <!-- Days labels -->
+                <div class="cal-grid" *ngIf="selectedBeekeeperId">
+                  <div class="dow">Mon</div><div class="dow">Tue</div><div class="dow">Wed</div>
+                  <div class="dow">Thu</div><div class="dow">Fri</div><div class="dow">Sat</div><div class="dow">Sun</div>
 
-          <div class="muted" *ngIf="!beekeepers.length">No users found.</div>
+                  <div *ngFor="let d of daysGrid"
+                      class="day"
+                      [class.outside]="d.date.getMonth() !== viewMonth.getMonth()"
+                      [class.day-done]="d.status === 'DONE'"
+                      [class.day-future]="d.status === 'ASSIGNED_FUTURE'"
+                      [class.day-past]="d.status === 'ASSIGNED_PAST'">
+                    <span class="num">{{ d.label }}</span>
+                  </div>
+                </div>
+
+                <div class="legend" *ngIf="selectedBeekeeperId">
+                  <span class="swatch done"></span> Done
+                  <span class="swatch future"></span> To be done
+                  <span class="swatch past"></span> Overdue
+                </div>
+
+                <div class="muted" *ngIf="!beekeepers.length">No users found.</div>
+              </div>
+            </mat-tab>
+
+            <!-- TAB 2: Task Assignment -->
+            <mat-tab label="Task Assignment">
+              <div class="tab-content">
+                <p>Task Assignment UI will go here…</p>
+              </div>
+            </mat-tab>
+
+            <!-- TAB 3: Task Modification -->
+            <mat-tab label="Task Modification">
+              <div class="tab-content">
+                <p>Task Modification UI will go here…</p>
+              </div>
+            </mat-tab>
+          </mat-tab-group>
         </mat-card-content>
       </mat-card>
     </div>
