@@ -1,7 +1,7 @@
 const { 
   fetchTasks, fetchComments, fetchCompleted, getBeekeeperCalendar,
   fetchFutureTasks, assignExistingTask, createAndAssignTask, updateTask,
-  deleteTask
+  deleteTask, getUserCalendar
  } = require('../services/tasksService');
 
 function n(v) { const x = parseInt(v, 10); return Number.isFinite(x) ? x : undefined; }
@@ -145,6 +145,24 @@ async function deleteTaskCNT(req, res) {
   }
 }
 
+async function getCalendarUser(req, res) {
+  try {
+    const beekeeperId = req.user.id; 
+    const { from, to } = req.query;
+
+    const items = await getUserCalendar({
+      beekeeperId,
+      from,
+      to
+    });
+
+    res.json({ items });
+  } catch (err) {
+    console.error('Error in getCalendarUser:', err);
+    res.status(500).json({ message: 'Failed to load calendar.' });
+  }
+}
+
 module.exports = { 
   getTasks, 
   getComments, 
@@ -154,5 +172,6 @@ module.exports = {
   assignExistingTaskCNT,
   createAndAssignTaskCNT,
   updateTaskCNT,
-  deleteTaskCNT
+  deleteTaskCNT,
+  getCalendarUser
 }

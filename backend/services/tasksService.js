@@ -406,6 +406,88 @@ async function deleteTask(taskId) {
   return { success: true };
 }
 
+async function getUserCalendar({ beekeeperId, from, to }) {
+  if (!beekeeperId) throw new Error('beekeeperId required');
+  if (!from || !to) throw new Error('from and to required');
+  console.log(beekeeperId);
+  await poolConnect;
+  const req = (await poolConnect).request();
+  req.input('bk', sql.Int, beekeeperId);
+  req.input('from', sql.Date, new Date(from));
+  req.input('to', sql.Date, new Date(to));
+
+  const q = `
+    SELECT
+      a.id AS assignment_id,
+      a.status AS assignment_status,
+      a.done_at,
+      t.id AS task_id,
+      t.title,
+      t.start_at,
+      t.end_at,
+      t.description
+    FROM TaskAssignments a
+    JOIN Tasks t ON t.id = a.task_id
+    WHERE a.beekeeper_id = @bk
+      AND CAST(t.start_at AS date) BETWEEN @from AND @to;
+  `;
+
+  const rs = await req.query(q);
+
+  const now = new Date();
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const today = todayDate.getTime();
+
+  const byDate = new Map();
+
+  for (const row of rs.recordset) {
+    const dayKey = toDateOnly(row.end_at);
+
+    if (!byDate.has(dayKey)) {
+      byDate.set(dayKey, {
+        done: false,
+        future: false,
+        past: false,
+        tasks: [] 
+      });
+    }
+
+    const bucket = byDate.get(dayKey);
+
+    // store title + description
+    bucket.tasks.push({
+      title: row.title || '',
+      description: row.description || ''
+    });
+
+    // determine status
+    if ((row.assignment_status || '').toUpperCase() === 'DONE') {
+      bucket.done = true;
+    } else {
+      const start = new Date(row.start_at).getTime();
+      const end = row.end_at ? new Date(row.end_at).getTime() : null;
+
+      const isFuture = start >= today;
+      const isOverdue = end ? (end < now.getTime()) : (start < today);
+
+      if (isOverdue) bucket.past = true;
+      else if (isFuture) bucket.future = true;
+      else bucket.future = true;
+    }
+  }
+
+  return [...byDate.entries()]
+    .map(([date, b]) => {
+      let status = null;
+      if (b.done) status = 'DONE';
+      else if (b.future) status = 'ASSIGNED_FUTURE';
+      else if (b.past) status = 'ASSIGNED_PAST';
+      return { date, status, tasks: b.tasks };
+    })
+    .filter(x => !!x.status)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
 module.exports = {
   fetchTasks,
   fetchComments,
@@ -415,5 +497,6 @@ module.exports = {
   assignExistingTask,
   createAndAssignTask,
   updateTask,
-  deleteTask
+  deleteTask,
+  getUserCalendar
 };
