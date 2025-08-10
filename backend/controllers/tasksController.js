@@ -1,6 +1,7 @@
-const { fetchTasks, fetchComments, fetchCompleted } = require('../services/tasksService');
+const { fetchTasks, fetchComments, fetchCompleted, getBeekeeperCalendar } = require('../services/tasksService');
 
 function n(v) { const x = parseInt(v, 10); return Number.isFinite(x) ? x : undefined; }
+function d(v) { return v ? String(v) : undefined; }
 
 async function getTasks(req, res) {
   try {
@@ -52,4 +53,22 @@ async function getCompleted(req, res) {
   }
 }
 
-module.exports = { getTasks, getComments, getCompleted }
+async function beekeeperCalendarCNT(req, res) {
+  try {
+    const beekeeperId = n(req.query.beekeeperId);
+    const from = d(req.query.from);
+    const to = d(req.query.to);
+
+    if (!beekeeperId || !from || !to) {
+      return res.status(400).json({ message: 'beekeeperId, from and to are required.' });
+    }
+
+    const items = await getBeekeeperCalendar({ beekeeperId, from, to });
+    return res.json({ items });
+  } catch (e) {
+    console.error('beekeeperCalendar error:', e);
+    return res.status(500).json({ message: 'Failed to load calendar.' });
+  }
+}
+
+module.exports = { getTasks, getComments, getCompleted, beekeeperCalendarCNT }
