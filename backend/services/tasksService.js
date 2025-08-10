@@ -1,5 +1,12 @@
 const { sql, poolConnect } = require('../db');
 
+function daysDiffUtc(a, b) {
+  const MS = 24 * 60 * 60 * 1000;
+  const ax = Date.UTC(a.getUTCFullYear(), a.getUTCMonth(), a.getUTCDate());
+  const bx = Date.UTC(b.getUTCFullYear(), b.getUTCMonth(), b.getUTCDate());
+  return Math.floor((ax - bx) / MS);
+}
+
 function pagingClause(page = 1, pageSize = 20, defaultOrder = 't.start_at DESC, t.id DESC') {
   page = Math.max(1, parseInt(page, 10) || 1);
   pageSize = Math.min(100, Math.max(1, parseInt(pageSize, 10) || 20));
@@ -487,6 +494,60 @@ async function getUserCalendar({ beekeeperId, from, to }) {
     .sort((a, b) => a.date.localeCompare(b.date));
 }
 
+async function markAssignmentDone({ assignmentId, userId, resultNote }) {
+  if (!assignmentId || !userId) throw new Error('assignmentId and userId required');
+
+  await poolConnect;
+  const req = (await poolConnect).request();
+  req.input('aid', sql.Int, assignmentId);
+  req.input('uid', sql.Int, userId);
+
+  const q = `
+    SELECT a.id, a.beekeeper_id, a.status,
+           t.id AS task_id, t.title, t.start_at, t.end_at
+    FROM TaskAssignments a
+    JOIN Tasks t ON t.id = a.task_id
+    WHERE a.id = @aid;
+  `;
+  const rs = await req.query(q);
+  const row = rs.recordset[0];
+  if (!row) {
+    const e = new Error('Assignment not found');
+    e.statusCode = 404; throw e;
+  }
+  if (row.beekeeper_id !== userId) {
+    const e = new Error('Forbidden');
+    e.statusCode = 403; throw e;
+  }
+  if ((row.status || '').toUpperCase() === 'DONE') {
+    const e = new Error('Assignment already DONE');
+    e.statusCode = 400; throw e;
+  }
+
+  const now = new Date(); 
+  const ref = row.end_at ? new Date(row.end_at) : new Date(row.start_at);
+  const overdueDays = daysDiffUtc(now, ref);
+  if (overdueDays > 3) {
+    const e = new Error('Assignment is too old to mark as DONE (> 3 days overdue)');
+    e.statusCode = 400; throw e;
+  }
+
+  // Update
+  const upd = (await poolConnect).request();
+  upd.input('aid', sql.Int, assignmentId);
+  upd.input('note', sql.VarChar(1000), resultNote || null);
+  const updQ = `
+    UPDATE TaskAssignments
+      SET status = 'DONE',
+          done_at = SYSUTCDATETIME(),
+          result_note = @note
+    WHERE id = @aid;
+  `;
+  await upd.query(updQ);
+
+  return { assignmentId, status: 'DONE' };
+}
+
 module.exports = {
   fetchTasks,
   fetchComments,
@@ -497,5 +558,6 @@ module.exports = {
   createAndAssignTask,
   updateTask,
   deleteTask,
-  getUserCalendar
+  getUserCalendar,
+  markAssignmentDone
 };

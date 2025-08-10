@@ -1,7 +1,7 @@
 const { 
   fetchTasks, fetchComments, fetchCompleted, getBeekeeperCalendar,
   fetchFutureTasks, assignExistingTask, createAndAssignTask, updateTask,
-  deleteTask, getUserCalendar
+  deleteTask, getUserCalendar, markAssignmentDone
  } = require('../services/tasksService');
 
 function n(v) { const x = parseInt(v, 10); return Number.isFinite(x) ? x : undefined; }
@@ -163,6 +163,23 @@ async function getCalendarUser(req, res) {
   }
 }
 
+async function markDoneCNT(req, res) {
+  try {
+    const assignmentId = n(req.params.assignmentId);
+    const userId = req.user?.id;
+    const resultNote = (req.body?.result_note || '').toString().slice(0, 1000) || null;
+
+    if (!assignmentId) return res.status(400).json({ message: 'assignmentId required' });
+
+    const out = await markAssignmentDone({ assignmentId, userId, resultNote });
+    return res.json(out);
+  } catch (e) {
+    const code = e.statusCode || 500;
+    console.error('markDone error:', e);
+    return res.status(code).json({ message: e.message || 'Failed to mark as done.' });
+  }
+}
+
 module.exports = { 
   getTasks, 
   getComments, 
@@ -173,5 +190,6 @@ module.exports = {
   createAndAssignTaskCNT,
   updateTaskCNT,
   deleteTaskCNT,
-  getCalendarUser
+  getCalendarUser,
+  markDoneCNT
 }
