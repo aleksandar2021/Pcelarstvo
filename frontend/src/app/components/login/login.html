@@ -22,6 +22,12 @@
           <input matInput [(ngModel)]="password" name="password" type="password" required>
         </mat-form-field>
 
+        <div class="link-row">
+          <button type="button" mat-button class="link-btn" (click)="openChangePassword()">
+            Change password?
+          </button>
+        </div>
+
         <button mat-raised-button class="login-button" type="submit">
           Login
         </button>
