@@ -26,4 +26,11 @@ export class UserService {
   }): Observable<any> {
     return this.http.post('http://localhost:3000/auth/register', data);
   }
+
+  changePassword(payload: { username: string; oldPassword: string; newPassword: string; }) {
+    return this.http.post<{ ok: boolean }>(
+      'http://localhost:3000/auth/changePW',
+      payload
+    );
+  }
 }
