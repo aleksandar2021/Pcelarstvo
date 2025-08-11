@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { findUserByUsername } = require('../services/userService');
-const { registerUser } = require('../services/userService');
+const { registerUser, changePassword } = require('../services/userService');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'tajni_kljuc_za_dev';
 
@@ -63,4 +63,16 @@ async function login(req, res) {
   }
 }
 
-module.exports = { register, login };
+async function changePasswordCNT(req, res) {
+  try {
+    const { username, oldPassword, newPassword } = req.body || {};
+    const out = await changePassword({ username, oldPassword, newPassword });
+    return res.json(out);
+  } catch (e) {
+    const code = e.statusCode || 500;
+    console.error('changePassword error:', e);
+    return res.status(code).json({ message: e.message || 'Failed to change password.' });
+  }
+}
+
+module.exports = { register, login, changePasswordCNT };

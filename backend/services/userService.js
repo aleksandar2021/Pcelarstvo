@@ -53,4 +53,45 @@ async function listBeekeepers() {
   return rs.recordset;
 }
 
-module.exports = { registerUser, findUserByUsername, listBeekeepers };
+async function changePassword({ username, oldPassword, newPassword }) {
+  if (!username || !oldPassword || !newPassword) {
+    const e = new Error('username, oldPassword and newPassword are required');
+    e.statusCode = 400; throw e;
+  }
+
+  await poolConnect;
+
+  // Load user
+  const req1 = (await poolConnect).request();
+  req1.input('username', sql.VarChar, username);
+  const ures = await req1.query(`SELECT id, password FROM Users WHERE username = @username;`);
+  const user = ures.recordset[0];
+  if (!user) {
+    const e = new Error('User not found');
+    e.statusCode = 404; throw e;
+  }
+
+  // Verify old password
+  const ok = await bcrypt.compare(oldPassword, user.password);
+  if (!ok) {
+    const e = new Error('Old password is incorrect');
+    e.statusCode = 401; throw e;
+  }
+
+  // Hash new password
+  const hashed = await bcrypt.hash(newPassword, 10);
+
+  // Update
+  const req2 = (await poolConnect).request();
+  req2.input('id', sql.Int, user.id);
+  req2.input('pwd', sql.VarChar, hashed);
+  await req2.query(`
+    UPDATE Users
+      SET password = @pwd
+    WHERE id = @id;
+  `);
+
+  return { ok: true };
+}
+
+module.exports = { registerUser, findUserByUsername, listBeekeepers, changePassword };
