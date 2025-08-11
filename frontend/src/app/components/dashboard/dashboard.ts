@@ -190,7 +190,7 @@ export class Dashboard implements OnInit {
     FormsModule
   ],
   template: `
-    <h2 mat-dialog-title>Assignment</h2>
+    <h2 mat-dialog-title style="margin-bottom: 5px;">Assignment</h2>
 
     <div mat-dialog-content *ngIf="loading">Loading…</div>
     <div mat-dialog-content *ngIf="error">{{ error }}</div>
@@ -198,7 +198,7 @@ export class Dashboard implements OnInit {
     <div mat-dialog-content *ngIf="!loading && !error && assignment">
       <!-- Mark Done -->
       <div style="margin-bottom: 20px;">
-        <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-form-field appearance="outline" style="width: 100%; margin-top: 5px;">
           <mat-label>Result Note (optional)</mat-label>
           <textarea matInput rows="2" [(ngModel)]="resultNote"></textarea>
         </mat-form-field>
@@ -241,6 +241,7 @@ export class Dashboard implements OnInit {
   `
 })
 export class AssignmentDialog implements OnInit {
+  saving = false;
   assignment: any;
   loading = false;
   error = '';
@@ -262,10 +263,12 @@ export class AssignmentDialog implements OnInit {
     this.error = '';
     this.api.getAssignmentDetails(this.data.assignmentId).subscribe({
       next: (res) => {
+        debugger;
         this.assignment = res;
         this.loading = false;
       },
       error: (err) => {
+        debugger;
         this.error = err?.error?.message || 'Failed to load assignment.';
         this.loading = false;
       }
@@ -273,15 +276,21 @@ export class AssignmentDialog implements OnInit {
   }
 
   markDone() {
-    this.api.markAssignmentDone(this.data.assignmentId).subscribe({
+    if (this.saving) return;
+    this.saving = true;
+
+    this.api.markAssignmentDone(this.data.assignmentId, this.resultNote).subscribe({
       next: () => {
         this.assignment.status = 'DONE';
+        this.dialogRef.close('done');
       },
       error: (err) => {
+        this.saving = false;
         alert(err?.error?.message || 'Failed to mark as done.');
       }
     });
   }
+
 
   addComment(taskId: number) {
     if (!this.newCommentText.trim()) return;

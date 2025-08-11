@@ -55,7 +55,7 @@ export class UserUiService {
     const headers = this.authHeaders();
     return this.http.post<{ ok: boolean }>(
       `${this.base}/comments`,
-      { task_id: taskId, assignment_id: assignmentId, content: text },
+      { task_id: taskId, assignment_id: assignmentId, content: text.trim() },
       { headers }
     );
   }
@@ -64,6 +64,7 @@ export class UserUiService {
     assignmentId: number,
     result_note?: string
   ): Observable<{ assignmentId: number; status: 'DONE' }> {
+    debugger;
     const headers = this.authHeaders();
     return this.http.put<{ assignmentId: number; status: 'DONE' }>(
       `${this.base}/assignments/${assignmentId}/done`,
