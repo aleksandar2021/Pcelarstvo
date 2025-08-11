@@ -192,48 +192,69 @@ export class Dashboard implements OnInit {
   template: `
     <h2 mat-dialog-title style="margin-bottom: 5px;">Assignment</h2>
 
-    <div mat-dialog-content *ngIf="loading">Loading…</div>
-    <div mat-dialog-content *ngIf="error">{{ error }}</div>
+    <mat-tab-group>
+      <!-- TAB 1: Assignment -->
+      <mat-tab label="Assignment">
+        <div mat-dialog-content *ngIf="loading">Loading…</div>
+        <div mat-dialog-content *ngIf="error">{{ error }}</div>
 
-    <div mat-dialog-content *ngIf="!loading && !error && assignment">
-      <!-- Mark Done -->
-      <div style="margin-bottom: 20px;">
-        <mat-form-field appearance="outline" style="width: 100%; margin-top: 5px;">
-          <mat-label>Result Note (optional)</mat-label>
-          <textarea matInput rows="2" [(ngModel)]="resultNote"></textarea>
-        </mat-form-field>
-        <button mat-raised-button color="primary" (click)="markDone()" [disabled]="assignment.status === 'DONE'">
-          Mark Assignment Done
-        </button>
-      </div>
+        <div mat-dialog-content *ngIf="!loading && !error && assignment">
+          <div class="actions-row" style="margin-bottom: 12px;">
+            <mat-form-field appearance="outline" floatLabel="always" class="grow">
+              <mat-label>Result Note (optional)</mat-label>
+              <textarea matInput rows="3" [(ngModel)]="resultNote"></textarea>
+            </mat-form-field>
 
-      <!-- Tabs for tasks -->
-      <mat-tab-group>
-        <mat-tab *ngFor="let task of assignment.tasks" [label]="task.title">
-          <div style="padding: 10px;">
-            <h4>{{ task.title }}</h4>
-            <p>{{ task.description }}</p>
+            <button mat-raised-button color="primary"
+                    (click)="markDone()"
+                    [disabled]="assignment.status === 'DONE' || saving" style="margin-left: 72px;">
+              {{ saving ? 'Saving…' : 'Mark Assignment Done' }}
+            </button>
+          </div>
 
-            <div *ngIf="task.comments?.length; else noComments">
-              <div *ngFor="let c of task.comments" style="margin-bottom: 10px; padding: 6px; border: 1px solid #ccc; border-radius: 4px;">
-                <strong>{{ c.author }}</strong> <small>({{ c.created_at | date:'short' }})</small>
-                <div>{{ c.text }}</div>
-              </div>
+          <hr>
+
+          <!-- Optional: show task info -->
+          <div *ngIf="assignment.tasks?.length" style="margin-top: 12px;">
+            <h4 style="margin: 0 0 4px 0;">{{ assignment.tasks[0].title }}</h4>
+            <p style="margin: 0;">{{ assignment.tasks[0].description }}</p>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- TAB 2: Comments -->
+      <mat-tab label="Comments">
+        <div mat-dialog-content *ngIf="commentsLoading">Loading comments…</div>
+        <div mat-dialog-content *ngIf="commentsError">{{ commentsError }}</div>
+
+        <div mat-dialog-content *ngIf="!commentsLoading && !commentsError">
+          <div *ngIf="comments?.length; else noComments">
+            <div *ngFor="let c of comments"
+                 style="margin-bottom: 10px; padding: 8px; border: 1px solid #e5e7eb; border-radius: 6px;">
+              <strong>{{ c.author }}</strong>
+              <small>({{ c.created_at | date:'short' }})</small>
+              <div style="white-space: pre-wrap;">{{ c.text }}</div>
             </div>
-            <ng-template #noComments>
-              <p><i>No comments yet.</i></p>
-            </ng-template>
+          </div>
+          <ng-template #noComments>
+            <p><i>No comments yet.</i></p>
+          </ng-template>
 
-            <!-- Add new comment -->
-            <mat-form-field appearance="outline" style="width: 100%; margin-top: 10px;">
+          <!-- Add new comment -->
+          <div style="margin-top: 12px;">
+            <mat-form-field appearance="outline" style="width: 100%;">
               <mat-label>New Comment</mat-label>
               <textarea matInput rows="2" [(ngModel)]="newCommentText"></textarea>
             </mat-form-field>
-            <button mat-raised-button color="accent" (click)="addComment(task.task_id)">Add Comment</button>
+            <button mat-raised-button color="accent"
+                    (click)="addCommentForAssignment()"
+                    [disabled]="savingComment">
+              {{ savingComment ? 'Adding…' : 'Add Comment' }}
+            </button>
           </div>
-        </mat-tab>
-      </mat-tab-group>
-    </div>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
 
     <div mat-dialog-actions align="end">
       <button mat-button mat-dialog-close>Close</button>
@@ -242,10 +263,16 @@ export class Dashboard implements OnInit {
 })
 export class AssignmentDialog implements OnInit {
   saving = false;
+  savingComment = false;
+
   assignment: any;
   loading = false;
   error = '';
   resultNote = '';
+
+  comments: { id: number; text: string; created_at: string; author: string }[] = [];
+  commentsLoading = false;
+  commentsError = '';
   newCommentText = '';
 
   constructor(
@@ -255,22 +282,37 @@ export class AssignmentDialog implements OnInit {
   ) {}
 
   ngOnInit() {
-    this.loadDetails();
+    this.loadDetails();   
+    this.loadComments();  
   }
 
-  loadDetails() {
+  private loadDetails() {
     this.loading = true;
     this.error = '';
     this.api.getAssignmentDetails(this.data.assignmentId).subscribe({
-      next: (res) => {
+      next: (res: any) => {
         debugger;
         this.assignment = res;
         this.loading = false;
       },
       error: (err) => {
-        debugger;
         this.error = err?.error?.message || 'Failed to load assignment.';
         this.loading = false;
+      }
+    });
+  }
+
+  private loadComments() {
+    this.commentsLoading = true;
+    this.commentsError = '';
+    this.api.getAssignmentDetails(this.data.assignmentId).subscribe({
+      next: (res: any) => {
+        this.comments = res?.comments ?? [];
+        this.commentsLoading = false;
+      },
+      error: (err) => {
+        this.commentsError = err?.error?.message || 'Failed to load comments.';
+        this.commentsLoading = false;
       }
     });
   }
@@ -281,7 +323,7 @@ export class AssignmentDialog implements OnInit {
 
     this.api.markAssignmentDone(this.data.assignmentId, this.resultNote).subscribe({
       next: () => {
-        this.assignment.status = 'DONE';
+        if (this.assignment) this.assignment.status = 'DONE';
         this.dialogRef.close('done');
       },
       error: (err) => {
@@ -291,23 +333,33 @@ export class AssignmentDialog implements OnInit {
     });
   }
 
+  addCommentForAssignment() {
+    const text = (this.newCommentText || '').trim();
+    if (!text) return;
+    debugger;
+    const taskId =
+      this.assignment?.tasks?.[0]?.task_id ??
+      this.assignment?.task_id;
 
-  addComment(taskId: number) {
-    if (!this.newCommentText.trim()) return;
-    this.api.addAssignmentComment(this.data.assignmentId, taskId, this.newCommentText.trim()).subscribe({
+    if (!taskId) {
+      alert('Task ID is missing; cannot add comment.');
+      return;
+    }
+
+    this.savingComment = true;
+    this.api.addAssignmentComment(this.data.assignmentId, taskId, text).subscribe({
       next: () => {
-        const task = this.assignment.tasks.find((t: any) => t.task_id === taskId);
-        if (task) {
-          task.comments.push({
-            id: Date.now(),
-            text: this.newCommentText.trim(),
-            created_at: new Date().toISOString(),
-            author: 'You'
-          });
-        }
+        this.comments.unshift({
+          id: Date.now(),
+          text,
+          created_at: new Date().toISOString(),
+          author: 'You'
+        });
         this.newCommentText = '';
+        this.savingComment = false;
       },
       error: (err) => {
+        this.savingComment = false;
         alert(err?.error?.message || 'Failed to add comment.');
       }
     });

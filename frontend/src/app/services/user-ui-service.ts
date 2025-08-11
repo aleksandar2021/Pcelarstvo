@@ -26,10 +26,11 @@ export class UserUiService {
       .set('pageSize', '200');
 
     return this.http
-      .get<{ total: number; items: any[] }>(`${this.base}/comments`, { headers, params })
+      .get<{ total: number; items: any[]; task_id: any; }>(`${this.base}/comments`, { headers, params })
       .pipe(
         map(res => ({
           assignment_id: assignmentId,
+          task_id: res.task_id || null,
           title: '',
           description: '',
           status: 'ASSIGNED_FUTURE' as const,
@@ -52,6 +53,7 @@ export class UserUiService {
     taskId: number,
     text: string
   ): Observable<{ ok: boolean }> {
+    debugger;
     const headers = this.authHeaders();
     return this.http.post<{ ok: boolean }>(
       `${this.base}/comments`,

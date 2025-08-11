@@ -69,7 +69,6 @@ async function fetchComments({ taskId, assignmentId, page, pageSize }) {
     const e = new Error('Provide taskId and/or assignmentId');
     e.statusCode = 400; throw e;
   }
-
   await poolConnect;
   const { offset, pageSize: ps } = clampPaging(page, pageSize);
 
@@ -96,13 +95,26 @@ async function fetchComments({ taskId, assignmentId, page, pageSize }) {
     OFFSET ${offset} ROWS FETCH NEXT ${ps} ROWS ONLY;
   `;
 
+  pool = await poolConnect;
+  if (!taskId && assignmentId){
+    const taskRes = await pool.request()
+      .input('aid', sql.Int, assignmentId)
+      .query(`
+        SELECT task_id 
+        FROM TaskAssignments 
+        WHERE id = @aid
+      `);
+    if (taskRes.recordset.length) {
+      taskId = taskRes.recordset[0].task_id;
+    }
+  }
+
   const [cnt, data] = await Promise.all([
     req.query(countQ),
     req.query(dataQ)
   ]);
-
   const total = cnt.recordset[0]?.total || 0;
-  return { total, items: data.recordset };
+  return { total, items: data.recordset, task_id: taskId || null};
 }
 
 module.exports = {

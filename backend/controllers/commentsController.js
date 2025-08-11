@@ -8,7 +8,6 @@ async function createCommentCNT(req, res) {
     const taskId = n(req.body?.task_id);
     const assignmentId = req.body?.assignment_id ? n(req.body.assignment_id) : undefined;
     const content = (req.body?.content || '').toString();
-
     const out = await createComment({ authorId, taskId, content, assignmentId });
     return res.json(out);
   } catch (e) {
