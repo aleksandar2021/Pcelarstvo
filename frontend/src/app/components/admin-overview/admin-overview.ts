@@ -7,7 +7,7 @@ import { MatCardModule } from '@angular/material/card';
 import { MatTabsModule } from '@angular/material/tabs';
 import { MatTableModule } from '@angular/material/table';
 import { MatPaginator, MatPaginatorModule } from '@angular/material/paginator';
-import { MatSortModule } from '@angular/material/sort';
+import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatDatepickerModule } from '@angular/material/datepicker';
@@ -41,7 +41,7 @@ type FiltersForm = {
 export class AdminOverview implements OnInit {
   constructor(private fb: FormBuilder, private api: Admin, private router: Router) {}
 
-  form!: FormGroup;           
+  form!: FormGroup;
   activeTab = 0;
 
   tasksCols = ['id','title','start_at','end_at','assignments_total','assignments_done','source_type'];
@@ -57,6 +57,11 @@ export class AdminOverview implements OnInit {
   @ViewChild('pComments') pComments!: MatPaginator;
   @ViewChild('pCompleted') pCompleted!: MatPaginator;
 
+  // sort state per tab
+  tasksSort: Sort = { active: '', direction: '' };
+  commentsSort: Sort = { active: '', direction: '' };
+  completedSort: Sort = { active: '', direction: '' };
+
   ngOnInit(): void {
     this.form = this.fb.group<FiltersForm>({
       from: null,
@@ -71,7 +76,7 @@ export class AdminOverview implements OnInit {
 
   tabChanged(idx: number) {
     this.activeTab = idx;
-    this.applyFilters(); 
+    this.applyFilters();
   }
 
   applyFilters() {
@@ -96,6 +101,57 @@ export class AdminOverview implements OnInit {
     this.loadActive();
   }
 
+  sortChanged(kind: 'tasks'|'comments'|'completed', ev: Sort) {
+    if (kind === 'tasks')    this.tasksSort = ev;
+    if (kind === 'comments') this.commentsSort = ev;
+    if (kind === 'completed')this.completedSort = ev;
+    this.applySort(kind);
+  }
+
+  private applySort(kind: 'tasks'|'comments'|'completed') {
+    const state = kind === 'tasks' ? this.tasksSort
+               : kind === 'comments' ? this.commentsSort
+               : this.completedSort;
+
+    if (!state.active || !state.direction) return;
+
+    const dir = state.direction === 'asc' ? 1 : -1;
+
+    const getVal = (row: any, col: string) => {
+      switch (kind) {
+        case 'tasks':
+          if (col === 'start_at' || col === 'end_at') return row[col] ? new Date(row[col]).getTime() : 0;
+          if (col === 'assignments_total' || col === 'assignments_done') return Number(row[col] ?? 0);
+          if (col === 'id') return Number(row.id ?? 0);
+          return (row[col] ?? '').toString().toLowerCase();
+
+        case 'comments':
+          if (col === 'created_at') return row.created_at ? new Date(row.created_at).getTime() : 0;
+          if (col === 'author') return `${row.name ?? ''} ${row.surname ?? ''}`.trim().toLowerCase();
+          if (col === 'id') return Number(row.id ?? 0);
+          return (row[col] ?? '').toString().toLowerCase();
+
+        case 'completed':
+          if (col === 'done_at') return row.done_at ? new Date(row.done_at).getTime() : 0;
+          if (col === 'assignment_id') return Number(row.assignment_id ?? 0);
+          if (col === 'beekeeper') return `${row.name ?? ''} ${row.surname ?? ''}`.trim().toLowerCase();
+          return (row[col] ?? '').toString().toLowerCase();
+      }
+    };
+
+    const cmp = (a: any, b: any) => {
+      const va = getVal(a, state.active);
+      const vb = getVal(b, state.active);
+      if (va < vb) return -1 * dir;
+      if (va > vb) return  1 * dir;
+      return 0;
+    };
+
+    if (kind === 'tasks')    this.tasks.data = [...this.tasks.data].sort(cmp);
+    if (kind === 'comments') this.comments.data = [...this.comments.data].sort(cmp);
+    if (kind === 'completed')this.completed.data = [...this.completed.data].sort(cmp);
+  }
+
   private loadActive(force = false) {
     if (!this.form) return;
 
@@ -110,8 +166,16 @@ export class AdminOverview implements OnInit {
         status: status || undefined,
         page: this.tasks.page, pageSize: this.tasks.pageSize
       }).subscribe({
-        next: (res) => { this.tasks.total = res.total; this.tasks.data = res.items; this.tasks.loading = false; },
-        error: (e) => { this.tasks.error = e?.error?.message || 'Failed to load tasks.'; this.tasks.loading = false; }
+        next: (res) => {
+          this.tasks.total = res.total;
+          this.tasks.data = res.items;
+          this.tasks.loading = false;
+          if (this.tasksSort.active && this.tasksSort.direction) this.applySort('tasks');
+        },
+        error: (e) => {
+          this.tasks.error = e?.error?.message || 'Failed to load tasks.';
+          this.tasks.loading = false;
+        }
       });
     }
 
@@ -123,8 +187,16 @@ export class AdminOverview implements OnInit {
         taskId: taskId ?? undefined,
         page: this.comments.page, pageSize: this.comments.pageSize
       }).subscribe({
-        next: (res) => { this.comments.total = res.total; this.comments.data = res.items; this.comments.loading = false; },
-        error: (e) => { this.comments.error = e?.error?.message || 'Failed to load comments.'; this.comments.loading = false; }
+        next: (res) => {
+          this.comments.total = res.total;
+          this.comments.data = res.items;
+          this.comments.loading = false;
+          if (this.commentsSort.active && this.commentsSort.direction) this.applySort('comments');
+        },
+        error: (e) => {
+          this.comments.error = e?.error?.message || 'Failed to load comments.';
+          this.comments.loading = false;
+        }
       });
     }
 
@@ -136,8 +208,16 @@ export class AdminOverview implements OnInit {
         taskId: taskId ?? undefined,
         page: this.completed.page, pageSize: this.completed.pageSize
       }).subscribe({
-        next: (res) => { this.completed.total = res.total; this.completed.data = res.items; this.completed.loading = false; },
-        error: (e) => { this.completed.error = e?.error?.message || 'Failed to load completed.'; this.completed.loading = false; }
+        next: (res) => {
+          this.completed.total = res.total;
+          this.completed.data = res.items;
+          this.completed.loading = false;
+          if (this.completedSort.active && this.completedSort.direction) this.applySort('completed');
+        },
+        error: (e) => {
+          this.completed.error = e?.error?.message || 'Failed to load completed.';
+          this.completed.loading = false;
+        }
       });
     }
   }
@@ -147,6 +227,7 @@ export class AdminOverview implements OnInit {
   }
 
   logout(){
-    
+    localStorage.clear();
+    window.location.href = '';
   }
 }
