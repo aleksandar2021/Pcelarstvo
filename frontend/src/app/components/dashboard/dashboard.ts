@@ -10,7 +10,10 @@ import { MatInputModule } from '@angular/material/input';
 import { MatTabsModule } from '@angular/material/tabs';
 import { UserUiService } from '../../services/user-ui-service';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
+import autoTable from 'jspdf-autotable';
+import { forkJoin, lastValueFrom } from 'rxjs';
+
+
 
 type DayStatus = 'DONE' | 'ASSIGNED_FUTURE' | 'ASSIGNED_PAST';
 
@@ -57,22 +60,121 @@ export class Dashboard implements OnInit {
   }
 
   async exportPdf() {
-    if (!this.calendarCard) return;
-    const el = this.calendarCard.nativeElement as HTMLElement;
-    const canvas = await html2canvas(el, { scale: 2, useCORS: true });
-    const imgData = canvas.toDataURL('image/png');
+    debugger;
+    try {
+      // Full current year bounds
+      const year = new Date().getFullYear();
+      const from = `${year}-01-01`;
+      const to   = `${year}-12-31`;
 
-    const pdf = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-    const pageWidth = pdf.internal.pageSize.getWidth();
-    const pageHeight = pdf.internal.pageSize.getHeight();
+      // 1) Fetch all assignments for the year
+      const yearCal = await lastValueFrom(
+        this.api.getUserCalendar(from, to)
+      );
 
-    const imgWidth = pageWidth - 48;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
-    const y = Math.max(24, (pageHeight - imgHeight) / 2);
+      const items = yearCal.items || [];
+      if (!items.length) {
+        alert('No assignments this year to export.');
+        return;
+      }
 
-    pdf.addImage(imgData, 'PNG', 24, y, imgWidth, imgHeight, undefined, 'FAST');
-    pdf.save(`calendar-${this.viewMonth.getFullYear()}-${String(this.viewMonth.getMonth()+1).padStart(2,'0')}.pdf`);
+      // 2) Flatten to a list of assignment entries (one per day item)
+      // items[] looks like: { date, status, assignment_id, tasks: [{title, description}] }
+      const entries = items
+        .map(it => ({
+          date: it.date,
+          status: it.status as DayStatus,
+          assignmentId: it.assignment_id,
+          title: it.tasks?.[0]?.title ?? '',
+          description: it.tasks?.[0]?.description ?? ''
+        }))
+        // Some backends could theoretically return duplicates; dedupe by assignmentId:
+        .filter(e => e.assignmentId != null);
+
+      // 3) Fetch comments/details for each assignment in parallel
+      const uniqByAid = new Map<number, typeof entries[0]>();
+      entries.forEach(e => uniqByAid.set(e.assignmentId!, e));
+      const uniqueEntries = [...uniqByAid.values()];
+
+      const detailRequests = uniqueEntries.map(e =>
+        this.api.getAssignmentDetails(e.assignmentId!)
+      );
+      const details = await lastValueFrom(forkJoin(detailRequests));
+
+      // Map assignment_id -> comments[]
+      const commentsByAid = new Map<number, { id:number; text:string; created_at:string; author:string }[]>();
+      details.forEach(det => {
+        commentsByAid.set(det.assignment_id, det.comments || []);
+      });
+
+      // 4) Build table rows sorted by date
+      const rows = uniqueEntries
+        .sort((a, b) => a.date.localeCompare(b.date))
+        .map((e, idx) => {
+          const statusLabel =
+            e.status === 'DONE' ? 'DONE' :
+            e.status === 'ASSIGNED_PAST' ? 'OVERDUE' : 'To be done';
+
+          const cmts = (commentsByAid.get(e.assignmentId!) || [])
+            .map(c => `${new Date(c.created_at).toLocaleString()} — ${c.text} (${c.author})`)
+            .join('\n');
+
+          return [
+            String(idx + 1),    // Number
+            e.title,
+            e.description,
+            e.date,             // Due date
+            statusLabel,
+            cmts
+          ];
+        });
+
+      // 5) Compose PDF
+      const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
+
+      // Title
+      doc.setFontSize(18);
+      doc.text(`ASSIGNMENT TABLE — ${year}`, 40, 50);
+
+      // Table
+      autoTable(doc, {
+        startY: 80,
+        head: [['#', 'Title', 'Description', 'Due date', 'Status', 'Comments']],
+        body: rows,
+        styles: { fontSize: 9, cellPadding: 6, valign: 'top' },
+        headStyles: { fillColor: [11, 53, 88], textColor: 255 },
+        columnStyles: {
+          0: { cellWidth: 30 },   // Number
+          1: { cellWidth: 150 },  // Title
+          2: { cellWidth: 220 },  // Description
+          3: { cellWidth: 90 },   // Due date
+          4: { cellWidth: 95 },   // Status
+          5: { cellWidth: 260 },  // Comments
+        },
+        didParseCell: (data) => {
+          if (data.section === 'body' && data.column.index === 4) {
+            const v = String(data.cell.raw || '');
+            if (v === 'DONE') {
+              data.cell.styles.fillColor = [156, 255, 177]; // green
+            } else if (v === 'OVERDUE') {
+              data.cell.styles.fillColor = [255, 145, 145]; // red
+            } else {
+              data.cell.styles.fillColor = [250, 224, 139]; // yellow
+            }
+          }
+        }
+      });
+
+      // 6) Save (browser prompts where to save)
+      const fname = `assignments-${year}.pdf`;
+      doc.save(fname);
+    } catch (err) {
+      console.error(err);
+      alert('Failed to export yearly PDF.');
+    }
   }
+
+
 
   onPrevMonth() {
     this.viewMonth = new Date(this.viewMonth.getFullYear(), this.viewMonth.getMonth() - 1, 1);
@@ -127,6 +229,7 @@ export class Dashboard implements OnInit {
 
     this.api.getUserCalendar(from, to).subscribe({
       next: (res) => {
+        debugger;
         const map = new Map(res.items.map((it: any) => [it.date, it]));
         this.daysGrid = this.daysGrid.map(c => {
           const hit = map.get(c.key);

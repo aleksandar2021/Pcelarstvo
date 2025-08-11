@@ -2,13 +2,13 @@ import {
   _CdkPrivateStyleLoader
 } from "./chunk-ZW7JKXHT.js";
 import {
+  BidiModule
+} from "./chunk-HBRXMV6Z.js";
+import {
   Platform,
   coerceElement,
   coerceNumberProperty
-} from "./chunk-A7A7JKOO.js";
-import {
-  BidiModule
-} from "./chunk-HBRXMV6Z.js";
+} from "./chunk-DCZTFHD2.js";
 import {
   APP_ID,
   CSP_NONCE,
@@ -64,15 +64,6 @@ import {
 import {
   __spreadValues
 } from "./chunk-TXDUYLVM.js";
-
-// node_modules/@angular/cdk/fesm2022/fake-event-detection-DWOdFTFz.mjs
-function isFakeMousedownFromScreenReader(event) {
-  return event.buttons === 0 || event.detail === 0;
-}
-function isFakeTouchstartFromScreenReader(event) {
-  const touch = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0];
-  return !!touch && touch.identifier === -1 && (touch.radiusX == null || touch.radiusX === 1) && (touch.radiusY == null || touch.radiusY === 1);
-}
 
 // node_modules/@angular/cdk/fesm2022/keycodes-CpHkExLC.mjs
 var BACKSPACE = 8;
@@ -130,6 +121,15 @@ function _getFocusedElementPierceShadowDom() {
 }
 function _getEventTarget(event) {
   return event.composedPath ? event.composedPath()[0] : event.target;
+}
+
+// node_modules/@angular/cdk/fesm2022/fake-event-detection-DWOdFTFz.mjs
+function isFakeMousedownFromScreenReader(event) {
+  return event.buttons === 0 || event.detail === 0;
+}
+function isFakeTouchstartFromScreenReader(event) {
+  const touch = event.touches && event.touches[0] || event.changedTouches && event.changedTouches[0];
+  return !!touch && touch.identifier === -1 && (touch.radiusX == null || touch.radiusX === 1) && (touch.radiusY == null || touch.radiusY === 1);
 }
 
 // node_modules/@angular/cdk/fesm2022/passive-listeners-esHZRgIN.mjs
@@ -3131,7 +3131,6 @@ export {
   RIGHT_ARROW,
   DOWN_ARROW,
   A,
-  _getShadowRoot,
   _getFocusedElementPierceShadowDom,
   _getEventTarget,
   normalizePassiveListenerOptions,
@@ -3157,4 +3156,4 @@ export {
   MATERIAL_SANITY_CHECKS,
   MatCommonModule
 };
-//# sourceMappingURL=chunk-WMUHVMJU.js.map
+//# sourceMappingURL=chunk-YPVXJWHG.js.map
